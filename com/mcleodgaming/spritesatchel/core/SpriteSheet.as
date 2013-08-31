@@ -1,14 +1,18 @@
 package com.mcleodgaming.spritesatchel.core 
 {
 	import com.adobe.images.PNGEncoder;
+	import com.mcleodgaming.spritesatchel.controllers.MenuController;
+	import com.mcleodgaming.spritesatchel.events.SpriteSheetEvent;
 	import com.mcleodgaming.spritesatchel.Main;
 	import com.mcleodgaming.spritesatchel.util.Utils;
 	import flash.display.BitmapData;
 	import flash.display.MovieClip;
 	import flash.events.Event;
+	import flash.events.EventDispatcher;
 	import flash.events.IOErrorEvent;
 	import flash.events.ProgressEvent;
 	import flash.events.SecurityErrorEvent;
+	import flash.events.TimerEvent;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
@@ -16,11 +20,13 @@ package com.mcleodgaming.spritesatchel.core
 	import flash.text.TextField;
 	import flash.text.TextFormat;
 	import flash.utils.ByteArray;
-	public class SpriteSheet 
+	import flash.utils.Timer;
+	
+	public class SpriteSheet extends EventDispatcher
 	{
 		public static const TRANS_COLOR:uint = 0x00113366;
 		public static const HEADER_SIZE:int = 80;
-		public static const MAX_DIMENSIONS:int = 2048;
+		public static const MAX_DIMENSIONS:int = 4096;
 		
 		protected var _name:String;
 		protected var _frames:int;
@@ -31,9 +37,11 @@ package com.mcleodgaming.spritesatchel.core
 		protected var _currentMaxHeight:int;
 		protected var _previousWidth:int;
 		protected var _rowStart:Boolean;
+		protected var _timer:Timer;
 		
 		public function SpriteSheet(name:String) 
 		{
+			super(null);
 			_name = name;
 			_frames = 0;
 			_bitmapData = null;
@@ -42,6 +50,7 @@ package com.mcleodgaming.spritesatchel.core
 			_currentMaxHeight = 0;
 			_previousWidth = 0;
 			_rowStart = true; //For the first MC of any row, we assume we don't need to check for space in the spritesheet
+			_timer = new Timer(20, 1);
 		}	
 		public function get Name():String
 		{
@@ -56,9 +65,17 @@ package com.mcleodgaming.spritesatchel.core
 			if (_bitmapData)
 				_bitmapData.dispose();
 			_bitmapData = new BitmapData(128, 128, true, SpriteSheet.TRANS_COLOR);
-			for (var i:int = 0; i < mc.totalFrames; i++)
-			{
+			
+			var i:int = 0;
+			_timer.addEventListener(TimerEvent.TIMER, function(e:TimerEvent):void { 
+				if (i > mc.totalFrames) {
+					mc.gotoAndStop(1);
+					dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.IMPORT_COMPLETE, "Import job completed."));
+					return;
+				}
+				var frameLabel:String = (mc.currentLabel) ? mc.currentLabel : "animation" + (mc.currentFrame - 1);
 				mc.gotoAndStop(i + 1);
+				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.STATUS, "Processing " + frameLabel + "..."));
 				for (var j:int = 0; j < mc.numChildren; j++)
 				{
 					if (mc.getChildAt(j) is MovieClip)
@@ -68,7 +85,12 @@ package com.mcleodgaming.spritesatchel.core
 						break; //To next animation
 					}
 				}
-			}
+				e.updateAfterEvent();
+				i++;
+				_timer.reset();
+				_timer.start();
+			});
+			_timer.start();
 		}
 		public function importAnimation(name:String, mc:MovieClip, forceXScale:Number = 1, forceYScale:Number = 1):void
 		{
@@ -93,7 +115,12 @@ package com.mcleodgaming.spritesatchel.core
 			for (var i:int = 1; i <= mc.totalFrames; i++, frameNum++)
 			{
 				//Force MC to gotoAndStop() on next frame
-				mc.gotoAndStop(i);
+				if(mc.currentFrame + 1 == i)
+					mc.nextFrame(); //Use standard next frame method
+				else if (mc.currentFrame != i)
+					mc.gotoAndStop(i); //If frame is otherwise different, force gotoAndStop()
+					
+				Utils.recursiveMovieClipPlay(mc, true);
 				if (frameNum != mc.currentFrame)
 				{
 					//In this case, the MC had AS in it which caused it not to stop, so we'll use whatever the previous frame contained
@@ -102,7 +129,17 @@ package com.mcleodgaming.spritesatchel.core
 				{
 					//Ready to capture Bitmap of this frame
 					var boundsRect:Rectangle = mc.getBounds(mc);
+					var optimalDimensions:Rectangle = Utils.getVisibleBounds(mc, null);
 					var registrationRect:Rectangle = mc.getBounds(mc.parent);
+					
+					boundsRect.x += optimalDimensions.x;
+					boundsRect.y += optimalDimensions.y;
+					boundsRect.width = optimalDimensions.width;
+					boundsRect.height = optimalDimensions.height;
+					
+					registrationRect.x += optimalDimensions.x;
+					registrationRect.y += optimalDimensions.y;
+					
 					if (boundsRect.width == 0)
 					{
 						//The MC didn't contain any graphics, so we'll just make a blank pixel here
@@ -166,7 +203,7 @@ package com.mcleodgaming.spritesatchel.core
 					if (_currentPoint.x + currentFrameBitmap.width > SpriteSheet.MAX_DIMENSIONS)
 					{
 						if (_rowStart)
-							trace("Error, the first sprite of the sheet exceed maximum BitmapData dimensions");
+							dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.STATUS, "Error, the first sprite of the sheet exceed maximum BitmapData dimensions"));
 						//Advance to the next spot on our sprite sheet (with 1 pixel buffer)
 						//Out of sheet width, next row of sprites begins
 						_currentPoint.x = 0;
@@ -248,10 +285,16 @@ package com.mcleodgaming.spritesatchel.core
 			var imgByteArray:ByteArray = PNGEncoder.encode(fullsheet);
 			var	fileRef:FileReference = new FileReference();
 			fileRef.addEventListener(Event.SELECT, function(e:Event):void {} ); 
-			fileRef.addEventListener(IOErrorEvent.IO_ERROR, function(e:Event):void {}); 
-			fileRef.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:Event):void {}); 
-			fileRef.addEventListener(ProgressEvent.PROGRESS,  function(e:Event):void {}); 
-			fileRef.addEventListener(Event.COMPLETE, function(e:Event):void { saveJSON();  } );
+			fileRef.addEventListener(IOErrorEvent.IO_ERROR,  function(e:IOErrorEvent):void {
+				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.EXPORT_COMPLETE, "Export job completed with IOError.")); 
+			}); 
+			fileRef.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent):void {
+				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.EXPORT_COMPLETE, "Export job completed with SecurityError.")); 
+			}); 
+			fileRef.addEventListener(ProgressEvent.PROGRESS, function(e:Event):void {}); 
+			fileRef.addEventListener(Event.COMPLETE, function(e:Event):void { 
+				saveJSON();  
+			});
 			fileRef.save(imgByteArray, _name + ".png"); 
 		}
 		public function saveJSON():void
@@ -300,10 +343,16 @@ package com.mcleodgaming.spritesatchel.core
 			
 			var fileReference:FileReference = new FileReference();
 			fileReference.addEventListener(Event.SELECT, function(e:Event):void {} ); 
-			fileReference.addEventListener(IOErrorEvent.IO_ERROR, function(e:Event):void {}); 
-			fileReference.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:Event):void {}); 
-			fileReference.addEventListener(ProgressEvent.PROGRESS,  function(e:Event):void {}); 
-			fileReference.addEventListener(Event.COMPLETE, function(e:Event):void { } );
+			fileReference.addEventListener(IOErrorEvent.IO_ERROR, function(e:IOErrorEvent):void {
+				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.EXPORT_COMPLETE, "Export job completed with IOError.")); 
+			}); 
+			fileReference.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent):void {
+				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.EXPORT_COMPLETE, "Export job completed with SecurityError.")); 
+			}); 
+			fileReference.addEventListener(ProgressEvent.PROGRESS,  function(e:ProgressEvent):void {}); 
+			fileReference.addEventListener(Event.COMPLETE, function(e:Event):void { 
+				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.EXPORT_COMPLETE, "Export job completed.")); 
+			});
 			
 			fileReference.save(bArr, _name + ".json");
 		}

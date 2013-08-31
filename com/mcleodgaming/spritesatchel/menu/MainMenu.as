@@ -3,6 +3,7 @@ package com.mcleodgaming.spritesatchel.menu
 	import com.bit101.components.ComboBox;
 	import com.bit101.components.TextArea;
 	import com.mcleodgaming.spritesatchel.core.SpriteSheet;
+	import com.mcleodgaming.spritesatchel.events.SpriteSheetEvent;
 	import com.mcleodgaming.spritesatchel.Main;
 	import com.mcleodgaming.spritesatchel.util.Utils;
 	import flash.display.Loader;
@@ -55,6 +56,7 @@ package com.mcleodgaming.spritesatchel.menu
 		{
 			_outputText.appendText(" > " + str + Main.NEWLINE);
 			_outputText.scrollV = _outputText.bottomScrollV;
+			Main.Root.stage.invalidate();
 		}
 		public function importSWF():void
 		{
@@ -101,9 +103,20 @@ package com.mcleodgaming.spritesatchel.menu
 					importedMC.y = 300;
 					Main.Root.addChild(importedMC);
 					var spritesheet:SpriteSheet = new SpriteSheet(mc.manifest[i].linkage);
+					spritesheet.addEventListener(SpriteSheetEvent.STATUS, function(e:SpriteSheetEvent):void { 
+						println(e.message);
+					});
+					spritesheet.addEventListener(SpriteSheetEvent.IMPORT_COMPLETE, function(e:SpriteSheetEvent):void { 
+						println(e.message);
+						println("Saving Spritesheet...");
+						spritesheet.saveSpriteSheet() 
+						println("Import and Save complete.");
+					});
+					spritesheet.addEventListener(SpriteSheetEvent.EXPORT_COMPLETE, function(e:SpriteSheetEvent):void { 
+						println(e.message);
+						println("Import and Save complete.");
+					});
 					spritesheet.importMovieClip(importedMC);
-					spritesheet.saveSpriteSheet();
-					println("Import and Save complete.");
 				}
 			}
 		}

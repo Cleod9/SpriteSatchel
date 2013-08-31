@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <application xmlns="http://ns.adobe.com/air/application/3.1">
   <id>com.mcleodgaming.spritesatchel</id>
-  <versionNumber>0.1</versionNumber>
+  <versionNumber>0.2</versionNumber>
   <filename>SpriteSatchel</filename>
   <name>SpriteSatchel</name>
   <description>Easily batch convert your MovieClips from an entire SWF library into a SpriteSheets.</description>
