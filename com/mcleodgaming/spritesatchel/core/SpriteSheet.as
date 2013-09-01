@@ -332,7 +332,7 @@ package com.mcleodgaming.spritesatchel.core
 				jsonData += "\"frames\": [" + framesList.join(", ") + "]";
 				jsonData += "}, ";
 			}
-			jsonData += "\"all\": {\"frames\": [0]}}" + Main.NEWLINE;
+			jsonData = jsonData.substr(0, jsonData.lastIndexOf(",")) + "}" + Main.NEWLINE;
 			
 			tabs = tabs.substr(1);
 			
