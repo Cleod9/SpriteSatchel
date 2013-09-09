@@ -20,7 +20,7 @@ package com.mcleodgaming.spritesatchel
 		public static var Height:Number = 600;
 		
 		//Public constants
-		public const TITLE:String = "SpriteSatchel";
+		public static const TITLE:String = "SpriteSatchel";
 		
 		//Private properties
 		private static var ROOT:Main;//More specifically, so now we can access things a bit more proper
@@ -31,8 +31,16 @@ package com.mcleodgaming.spritesatchel
 		private var m_fileMenu:NativeMenu;
 		private var m_fileMenuItems:Vector.<NativeMenuItem>;
 		
+		private var m_helpMenu:NativeMenu;
+		private var m_helpMenuItems:Vector.<NativeMenuItem>;
+		
+		private var m_openProject:NativeMenuItem;
+		private var m_saveProject:NativeMenuItem;
+		private var m_saveProjectAs:NativeMenuItem;
 		private var m_importSWF:NativeMenuItem;
 		private var m_exit:NativeMenuItem;
+		
+		private var m_about:NativeMenuItem;
 		
 		public function Main():void 
 		{
@@ -43,17 +51,27 @@ package com.mcleodgaming.spritesatchel
 			//Create menus
 			m_menu = new NativeMenu();
 			m_fileMenu = new NativeMenu();
+			m_helpMenu = new NativeMenu();
 			
 			//Create menu items
-			m_importSWF = new NativeMenuItem("Import SWF...");
+			m_openProject = new NativeMenuItem("Open Project");
+			m_saveProject = new NativeMenuItem("Save Project");
+			m_saveProjectAs = new NativeMenuItem("Save Project As...");
+			m_importSWF = new NativeMenuItem("Import SWF");
 			m_exit = new NativeMenuItem("Exit");
+			m_about = new NativeMenuItem("About");
 			
 			//Add menu items to menus
+			m_fileMenu.addItem(m_openProject);
+			m_fileMenu.addItem(m_saveProject);
+			m_fileMenu.addItem(m_saveProjectAs);
 			m_fileMenu.addItem(m_importSWF);
 			m_fileMenu.addItem(m_exit);
+			m_helpMenu.addItem(m_about);
 			
 			//Add menu to master menu
 			m_menu.addSubmenu(m_fileMenu, "File");
+			m_menu.addSubmenu(m_helpMenu, "Help");
 			
 			//Make menu
 			if (NativeMenu.isSupported)
@@ -68,6 +86,7 @@ package com.mcleodgaming.spritesatchel
 			}
 			
 			//Set up events
+			m_openProject.addEventListener(Event.SELECT, openProject_CLICK);
 			m_importSWF.addEventListener(Event.SELECT, importSWF_CLICK);
 			m_exit.addEventListener(Event.SELECT, exit_CLICK);
 			
@@ -109,6 +128,15 @@ package com.mcleodgaming.spritesatchel
 		public static function get Root():Main
 		{
 			return ROOT;
+		}
+		
+		/**
+		 * Initiates Project XML import
+		 * @param	e Event argument.
+		 */
+		private function openProject_CLICK(e:Event):void
+		{
+			MenuController.mainMenu.openProject();
 		}
 		
 		/**

@@ -30,6 +30,7 @@ package com.mcleodgaming.spritesatchel.core
 		
 		protected var _name:String;
 		protected var _frames:int;
+		protected var _padding:int;
 		protected var _bitmapData:BitmapData;
 		protected var _animations:Vector.<Animation>;
 		
@@ -44,6 +45,7 @@ package com.mcleodgaming.spritesatchel.core
 			super(null);
 			_name = name;
 			_frames = 0;
+			_padding = 60;
 			_bitmapData = null;
 			_animations = new Vector.<Animation>();
 			_currentPoint = new Point();
@@ -129,16 +131,36 @@ package com.mcleodgaming.spritesatchel.core
 				{
 					//Ready to capture Bitmap of this frame
 					var boundsRect:Rectangle = mc.getBounds(mc);
-					var optimalDimensions:Rectangle = Utils.getVisibleBounds(mc, null);
-					var registrationRect:Rectangle = mc.getBounds(mc.parent);
+					var optimalDimensions:Rectangle = Utils.getVisibleBounds(mc, null); //Only capture visible area
+					var registrationRect:Rectangle = mc.getBounds(mc.parent); //Get registration point based on parent
 					
-					boundsRect.x += optimalDimensions.x;
+					/*boundsRect.x += optimalDimensions.x;
 					boundsRect.y += optimalDimensions.y;
 					boundsRect.width = optimalDimensions.width;
 					boundsRect.height = optimalDimensions.height;
 					
 					registrationRect.x += optimalDimensions.x;
-					registrationRect.y += optimalDimensions.y;
+					registrationRect.y += optimalDimensions.y;*/
+					
+					//Add optimal dimension offset to bounds rect
+					boundsRect.x += optimalDimensions.x - _padding;
+					boundsRect.y += optimalDimensions.y - _padding;
+					
+					//Override width with optimized width
+					boundsRect.width = Math.ceil(optimalDimensions.width + _padding * 2);
+					boundsRect.height = Math.ceil(optimalDimensions.height + _padding * 2);
+					
+					//Fix registration point from the slicing
+					registrationRect.x += optimalDimensions.x - _padding;
+					registrationRect.y += optimalDimensions.y - _padding;
+					
+					
+					//Round everything
+					boundsRect.x = Math.floor(boundsRect.x);
+					boundsRect.y = Math.floor(boundsRect.y);
+					registrationRect.x = Math.round(registrationRect.x);
+					registrationRect.y = Math.round(registrationRect.y);
+					
 					
 					if (boundsRect.width == 0)
 					{

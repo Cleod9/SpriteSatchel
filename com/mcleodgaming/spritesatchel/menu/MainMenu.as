@@ -2,6 +2,8 @@ package com.mcleodgaming.spritesatchel.menu
 {
 	import com.bit101.components.ComboBox;
 	import com.bit101.components.TextArea;
+	import com.mcleodgaming.spritesatchel.core.SatchelConfig;
+	import com.mcleodgaming.spritesatchel.core.SatchelSource;
 	import com.mcleodgaming.spritesatchel.core.SpriteSheet;
 	import com.mcleodgaming.spritesatchel.events.SpriteSheetEvent;
 	import com.mcleodgaming.spritesatchel.Main;
@@ -15,6 +17,8 @@ package com.mcleodgaming.spritesatchel.menu
 	import flash.events.MouseEvent;
 	import flash.events.ProgressEvent;
 	import flash.filesystem.File;
+	import flash.filesystem.FileMode;
+	import flash.filesystem.FileStream;
 	import flash.net.FileFilter;
 	import flash.net.URLRequest;
 	import flash.system.ApplicationDomain;
@@ -23,11 +27,14 @@ package com.mcleodgaming.spritesatchel.menu
 	
 	public class MainMenu extends Menu
 	{
+		private var _config:SatchelConfig;
 		private var _outputText:TextField;
 		
 		public function MainMenu() 
 		{
 			super();
+			
+			_config = new SatchelConfig();
 			
 			_outputText = new TextField();
 			_outputText.x = 10;
@@ -57,6 +64,68 @@ package com.mcleodgaming.spritesatchel.menu
 			_outputText.appendText(" > " + str + Main.NEWLINE);
 			_outputText.scrollV = _outputText.bottomScrollV;
 			Main.Root.stage.invalidate();
+		}
+		public function openProject():void
+		{
+			println("Awaiting Project to open...");
+			var textTypeFilter:FileFilter = new FileFilter("Sprite Satchel Project File | *.xml", "*.xml"); 
+            var fs:FileStream = new FileStream();
+            var openDialog:File = new File();
+			openDialog.addEventListener(Event.SELECT, function():void {
+				fs.open(openDialog, FileMode.READ);
+				var input:String = fs.readUTFBytes(fs.bytesAvailable);
+				fs.close();
+				processXML(XML(input));
+				_config.FilePath = openDialog.nativePath;
+				Main.setTitle(Main.TITLE + " - " + _config.ProjectName);
+			});
+			openDialog.addEventListener(Event.CANCEL, function():void { println("Action cancelled"); } );
+			openDialog.browseForOpen("Choose a file to open", [textTypeFilter]);
+		}
+		public function processXML(xmlData:XML):void
+		{
+			var i:int = 0;
+			var node:XML = null;
+			var project:XML = null;
+			var config:XML = null;
+			var sources:XML = null;
+			if (xmlData.name() == "spritesatchel")
+			{
+				if ((project = Utils.findXMLNodeByName(xmlData, "project")) != null)
+				{
+					_config.dispose();
+					_config = null;
+					_config = new SatchelConfig();
+					if (project.@name)
+						_config.ProjectName = project.@name;
+					if ((config = Utils.findXMLNodeByName(project, "config")) != null)
+					{
+						if (config.child("exportMode"))
+							_config.ExportMode = config.child("exportMode");
+						if (config.child("jsonExportPath"))
+							_config.JSONExportPath = config.child("jsonExportPath");
+						if (config.child("pngExportPath"))
+							_config.PNGExportPath = config.child("pngExportPath");
+					}
+					if ((sources = Utils.findXMLNodeByName(project, "sources")) != null)
+					{
+						for each(node in sources.children())
+						{
+							var source:SatchelSource = new SatchelSource(node);
+							if (node.@export)
+								source.Export = (node.@export == "false") ? false : true;
+							_config.Sources.push(source);
+						}
+					}
+					println("Successfully opened project \"" + _config.ProjectName  + "\".");
+				} else
+				{
+					println("Error, missing Project node.");
+				}
+			} else
+			{
+				println("Error, invalid Sprite Satchel Project file");
+			}
 		}
 		public function importSWF():void
 		{

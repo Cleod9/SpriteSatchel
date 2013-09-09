@@ -27,6 +27,10 @@
 		}
 		public static function getVisibleBounds(source:DisplayObject, targetCoordinateSpace:DisplayObject):Rectangle
 		{ 
+			//var a:Rectangle = source.getBounds(targetCoordinateSpace);
+			//a.x = 0;
+			//a.y = 0;
+				//return a;
 			//Based on: http://snipplr.com/view/63449/
 			var matrix:Matrix = new Matrix()
 			matrix.tx = -source.getBounds(targetCoordinateSpace).x;
@@ -36,7 +40,9 @@
 				return source.getBounds(targetCoordinateSpace);
 			 
 			var data:BitmapData = new BitmapData(source.width, source.height, true, SpriteSheet.TRANS_COLOR);
+			//data.fillRect(data.rect, 0xFFFFFF);
 			data.draw(source, matrix);
+			//var bounds : Rectangle = data.getColorBoundsRect(0xFFFFFF, SpriteSheet.TRANS_COLOR, false);
 			var bounds : Rectangle = data.getColorBoundsRect(0xFFFFFFFF, SpriteSheet.TRANS_COLOR, false);
 			data.dispose();
 			
@@ -80,6 +86,14 @@
 					recursiveMovieClipPlayChildren(MovieClip(mc.getChildAt(e)), shouldPlay, pMode);
 				}
 			}
+		}
+		public static function findXMLNodeByName(xml:XML, nodeName:String):XML
+		{
+			var xmlNodes:XMLList =  xml.children();
+			for each (var item:XML in xmlNodes)
+				if (item.name() == nodeName)
+					return item;
+			return null;
 		}
 	}
 }
