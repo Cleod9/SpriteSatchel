@@ -2,7 +2,8 @@ package com.mcleodgaming.spritesatchel.core
 {
 	import com.adobe.images.PNGEncoder;
 	import com.mcleodgaming.spritesatchel.controllers.MenuController;
-	import com.mcleodgaming.spritesatchel.events.SpriteSheetEvent;
+	import com.mcleodgaming.spritesatchel.events.EventManager;
+	import com.mcleodgaming.spritesatchel.events.SpriteSatchelEvent;
 	import com.mcleodgaming.spritesatchel.Main;
 	import com.mcleodgaming.spritesatchel.util.Utils;
 	import flash.display.BitmapData;
@@ -13,6 +14,9 @@ package com.mcleodgaming.spritesatchel.core
 	import flash.events.ProgressEvent;
 	import flash.events.SecurityErrorEvent;
 	import flash.events.TimerEvent;
+	import flash.filesystem.File;
+	import flash.filesystem.FileMode;
+	import flash.filesystem.FileStream;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
@@ -22,7 +26,7 @@ package com.mcleodgaming.spritesatchel.core
 	import flash.utils.ByteArray;
 	import flash.utils.Timer;
 	
-	public class SpriteSheet extends EventDispatcher
+	public class SpriteSheet
 	{
 		public static const TRANS_COLOR:uint = 0x00113366;
 		public static const HEADER_SIZE:int = 80;
@@ -31,28 +35,25 @@ package com.mcleodgaming.spritesatchel.core
 		protected var _name:String;
 		protected var _frames:int;
 		protected var _padding:int;
-		protected var _bitmapData:BitmapData;
+		protected var _spritesheet:BitmapData
 		protected var _animations:Vector.<Animation>;
 		
 		protected var _currentPoint:Point;
 		protected var _currentMaxHeight:int;
 		protected var _previousWidth:int;
 		protected var _rowStart:Boolean;
-		protected var _timer:Timer;
 		
 		public function SpriteSheet(name:String) 
 		{
-			super(null);
 			_name = name;
 			_frames = 0;
-			_padding = 60;
-			_bitmapData = null;
+			_padding = 0;
+			_spritesheet = null;
 			_animations = new Vector.<Animation>();
 			_currentPoint = new Point();
 			_currentMaxHeight = 0;
 			_previousWidth = 0;
 			_rowStart = true; //For the first MC of any row, we assume we don't need to check for space in the spritesheet
-			_timer = new Timer(20, 1);
 		}	
 		public function get Name():String
 		{
@@ -60,24 +61,26 @@ package com.mcleodgaming.spritesatchel.core
 		}
 		public function importMovieClip(mc:MovieClip, forceXScale:Number = 1, forceYScale:Number = 1):void
 		{
+			var timer:Timer = new Timer(20, 1);
 			_currentPoint = new Point();
 			_currentMaxHeight = 0;
 			_previousWidth = 0;
 			_rowStart = true;
-			if (_bitmapData)
-				_bitmapData.dispose();
-			_bitmapData = new BitmapData(128, 128, true, SpriteSheet.TRANS_COLOR);
+			if (_spritesheet)
+				_spritesheet.dispose();
+			_spritesheet = new BitmapData(128, 128, true, SpriteSheet.TRANS_COLOR);
 			
 			var i:int = 0;
-			_timer.addEventListener(TimerEvent.TIMER, function(e:TimerEvent):void { 
+			timer.addEventListener(TimerEvent.TIMER, function(e:TimerEvent):void { 
 				if (i > mc.totalFrames) {
+					timer.stop();
 					mc.gotoAndStop(1);
-					dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.IMPORT_COMPLETE, "Import job completed."));
+					EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.IMPORT_COMPLETE, "Import job completed. Generating PNG..."));
 					return;
 				}
 				var frameLabel:String = (mc.currentLabel) ? mc.currentLabel : "animation" + (mc.currentFrame - 1);
 				mc.gotoAndStop(i + 1);
-				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.STATUS, "Processing " + frameLabel + "..."));
+				EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Processing " + frameLabel + "..."));
 				for (var j:int = 0; j < mc.numChildren; j++)
 				{
 					if (mc.getChildAt(j) is MovieClip)
@@ -89,10 +92,10 @@ package com.mcleodgaming.spritesatchel.core
 				}
 				e.updateAfterEvent();
 				i++;
-				_timer.reset();
-				_timer.start();
+				timer.reset();
+				timer.start();
 			});
-			_timer.start();
+			timer.start();
 		}
 		public function importAnimation(name:String, mc:MovieClip, forceXScale:Number = 1, forceYScale:Number = 1):void
 		{
@@ -206,7 +209,7 @@ package com.mcleodgaming.spritesatchel.core
 						if (!currentSprite)
 							continue;
 						var tmpBMPDat:BitmapData = new BitmapData(currentSprite.rect.width, currentSprite.rect.height, true, SpriteSheet.TRANS_COLOR);
-						tmpBMPDat.copyPixels(_bitmapData,currentSprite.rect, new Point(), null, null, true);
+						tmpBMPDat.copyPixels(_spritesheet,currentSprite.rect, new Point(), null, null, true);
 						if (tmpBMPDat.compare(upcomingBMPDat) == 0)
 						{
 							//Match found, reference the old data
@@ -225,7 +228,7 @@ package com.mcleodgaming.spritesatchel.core
 					if (_currentPoint.x + currentFrameBitmap.width > SpriteSheet.MAX_DIMENSIONS)
 					{
 						if (_rowStart)
-							dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.STATUS, "Error, the first sprite of the sheet exceed maximum BitmapData dimensions"));
+							EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Error, the first sprite of the sheet exceed maximum BitmapData dimensions"));
 						//Advance to the next spot on our sprite sheet (with 1 pixel buffer)
 						//Out of sheet width, next row of sprites begins
 						_currentPoint.x = 0;
@@ -250,26 +253,26 @@ package com.mcleodgaming.spritesatchel.core
 					
 					//Before we draw, let's make sure we can actually fit the sprite on our sheet
 					var resizedSheet:BitmapData = null;
-					while (_currentPoint.x + currentFrameBitmap.width >= _bitmapData.width && _currentPoint.x + currentFrameBitmap.width < SpriteSheet.MAX_DIMENSIONS)
+					while (_currentPoint.x + currentFrameBitmap.width >= _spritesheet.width && _currentPoint.x + currentFrameBitmap.width < SpriteSheet.MAX_DIMENSIONS)
 					{
 						//Increase width 100 pixels at a time until we have enough width or we reach the max sheet width
-						resizedSheet = new BitmapData(_bitmapData.width * 2, _bitmapData.height, true, SpriteSheet.TRANS_COLOR);
-						resizedSheet.copyPixels(_bitmapData, _bitmapData.rect, new Point(), null, null, true);
-						_bitmapData.dispose();
-						_bitmapData = resizedSheet;
+						resizedSheet = new BitmapData(_spritesheet.width * 2, _spritesheet.height, true, SpriteSheet.TRANS_COLOR);
+						resizedSheet.copyPixels(_spritesheet, _spritesheet.rect, new Point(), null, null, true);
+						_spritesheet.dispose();
+						_spritesheet = resizedSheet;
 					}
-					while (_currentPoint.y + currentFrameBitmap.height > _bitmapData.height && _currentPoint.y + currentFrameBitmap.height < SpriteSheet.MAX_DIMENSIONS)
+					while (_currentPoint.y + currentFrameBitmap.height > _spritesheet.height && _currentPoint.y + currentFrameBitmap.height < SpriteSheet.MAX_DIMENSIONS)
 					{
 						//Increase height 100 pixels at a time until we have enough height or we reach max sheet height
-						resizedSheet = new BitmapData(_bitmapData.width, _bitmapData.height * 2, true, SpriteSheet.TRANS_COLOR);
-						resizedSheet.copyPixels(_bitmapData, _bitmapData.rect, new Point(), null, null, true);
-						_bitmapData.dispose();
-						_bitmapData = resizedSheet;
+						resizedSheet = new BitmapData(_spritesheet.width, _spritesheet.height * 2, true, SpriteSheet.TRANS_COLOR);
+						resizedSheet.copyPixels(_spritesheet, _spritesheet.rect, new Point(), null, null, true);
+						_spritesheet.dispose();
+						_spritesheet = resizedSheet;
 					}
 					
 					//Now we can draw the new bitmap onto our spritesheet after we get the snapshot from the MC
 					currentFrameBitmap.draw(mc, offset, mc.transform.colorTransform, null, null, true);
-					_bitmapData.copyPixels(currentFrameBitmap, currentFrameBitmap.rect, _currentPoint, null, null, true);
+					_spritesheet.copyPixels(currentFrameBitmap, currentFrameBitmap.rect, _currentPoint, null, null, true);
 				}
 			}
 		}
@@ -284,43 +287,98 @@ package com.mcleodgaming.spritesatchel.core
 			}
 			return null;
 		}
-		public function saveSpriteSheet():void 
+		public function exportAll(pngPath:String, jsonPath:String):void 
 		{
-			var headerMC:MovieClip = new MovieClip();
+			saveSpriteSheet(pngPath);
+			saveJSON(jsonPath);
+			EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed.")); 
+		}
+		public function saveSpriteSheet(pngPath:String):void
+		{
+			//First fix path
+			var prefix:String = "";
+			if (pngPath.indexOf(".") == 0)
+			{
+				//Relative to absolute
+				if (!Main.Config.FilePath)
+				{
+					EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Warning, cannot export " + _name + ".png to relative File path before saving Project.")); 
+					return;
+				} else
+				{
+					prefix = Main.Config.FilePath.substr(0, Main.Config.FilePath.lastIndexOf(File.separator)) + File.separator + pngPath + File.separator;
+				}
+			} else
+			{
+				//Already absolute
+				prefix = pngPath + File.separator;
+			}
+			pngPath = prefix + _name + ".png";
+			var directory:File = new File(prefix);
+			if (!directory.exists)
+				directory.createDirectory();
+			
+			/*var headerMC:MovieClip = new MovieClip();
 			var headerText:TextField = new TextField();
-			var headerBMP:BitmapData = new BitmapData(_bitmapData.width, HEADER_SIZE, true, SpriteSheet.TRANS_COLOR);
+			var headerBMP:BitmapData = new BitmapData(_spritesheetList.width, HEADER_SIZE, true, SpriteSheet.TRANS_COLOR);
 			headerText.multiline = true;
-			headerText.width = _bitmapData.width;
+			headerText.width = _spritesheetList.width;
 			headerText.height = HEADER_SIZE;
-			headerText.text = _name + "\nSheet Size [" + _bitmapData.width + "x" + (_bitmapData.height) + "]\nThis spritesheet was generated by SpriteSatchel\n(c) 2013 Greg McLeod. http://www.mcleodgaming.com";
+			headerText.text = _name + "\nSheet Size [" + _spritesheetList.width + "x" + (_spritesheetList.height) + "]\nThis spritesheet was generated by SpriteSatchel\n(c) 2013 Greg McLeod. http://www.mcleodgaming.com";
 			headerText.setTextFormat(new TextFormat("Courier New", 12, 0x000000));
 			headerMC.addChild(headerText);
 			headerMC.graphics.lineStyle(1);
 			headerMC.graphics.moveTo(0, 0);
-			headerMC.graphics.lineTo(_bitmapData.width, 0);
+			headerMC.graphics.lineTo(_spritesheetList.width, 0);
 			headerBMP.draw(headerMC, null, null, null, null, false);
 			
-			var fullsheet:BitmapData = new BitmapData(_bitmapData.width, _bitmapData.height + HEADER_SIZE, true, SpriteSheet.TRANS_COLOR);
-			fullsheet.copyPixels(_bitmapData, _bitmapData.rect, new Point(), null, null, true);
-			fullsheet.copyPixels(headerBMP, headerBMP.rect, new Point(0, fullsheet.height - HEADER_SIZE), null, null, true);
+			var fullsheet:BitmapData = new BitmapData(_spritesheetList.width, _spritesheetList.height + HEADER_SIZE, true, SpriteSheet.TRANS_COLOR);
+			fullsheet.copyPixels(_spritesheetList, _spritesheetList.rect, new Point(), null, null, true);
+			fullsheet.copyPixels(headerBMP, headerBMP.rect, new Point(0, fullsheet.height - HEADER_SIZE), null, null, true);*/
 			
+			var fullsheet:BitmapData = _spritesheet
 			var imgByteArray:ByteArray = PNGEncoder.encode(fullsheet);
-			var	fileRef:FileReference = new FileReference();
-			fileRef.addEventListener(Event.SELECT, function(e:Event):void {} ); 
-			fileRef.addEventListener(IOErrorEvent.IO_ERROR,  function(e:IOErrorEvent):void {
-				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.EXPORT_COMPLETE, "Export job completed with IOError.")); 
+			
+			var	fs:FileStream = new FileStream();
+			fs.open(new File(pngPath), FileMode.WRITE);
+			fs.addEventListener(Event.SELECT, function(e:Event):void {} ); 
+			fs.addEventListener(IOErrorEvent.IO_ERROR,  function(e:IOErrorEvent):void {
+				//EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed with IOError.")); 
 			}); 
-			fileRef.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent):void {
-				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.EXPORT_COMPLETE, "Export job completed with SecurityError.")); 
+			fs.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent):void {
+				//EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed with SecurityError.")); 
 			}); 
-			fileRef.addEventListener(ProgressEvent.PROGRESS, function(e:Event):void {}); 
-			fileRef.addEventListener(Event.COMPLETE, function(e:Event):void { 
-				saveJSON();  
+			fs.addEventListener(ProgressEvent.PROGRESS, function(e:Event):void {}); 
+			fs.addEventListener(Event.COMPLETE, function(e:Event):void { 
 			});
-			fileRef.save(imgByteArray, _name + ".png"); 
+			fs.writeBytes(imgByteArray);
+			fs.close();
 		}
-		public function saveJSON():void
+		public function saveJSON(jsonPath:String):void
 		{
+			//First fix path
+			var prefix:String = "";
+			if (jsonPath.indexOf(".") == 0)
+			{
+				//Relative to absolute
+				if (!Main.Config.FilePath)
+				{
+					EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Warning, cannot export " + _name + ".json to relative File path before saving Project.")); 
+					return;
+				} else
+				{
+					prefix = Main.Config.FilePath.substr(0, Main.Config.FilePath.lastIndexOf(File.separator)) + File.separator + jsonPath + File.separator;
+				}
+			} else
+			{
+				//Already absolute
+				prefix = jsonPath + File.separator;
+			}
+			jsonPath = prefix + _name + ".json";
+			var directory:File = new File(prefix);
+			if (!directory.exists)
+				directory.createDirectory();
+			
 			var tabs:String = "";
 			var jsonData:String = "{" + Main.NEWLINE;
 			tabs += "\t";
@@ -338,7 +396,7 @@ package com.mcleodgaming.spritesatchel.core
 			
 			jsonData += tabs + "]," + Main.NEWLINE;
 			
-			jsonData += tabs + "\"images\": [\"" + _name + ".png\"]," + Main.NEWLINE;
+			jsonData += tabs + "\"images\": [\"" + Main.Config.PNGExportPath + File.separator + _name + ".png\"]," + Main.NEWLINE;
 			
 			jsonData += tabs + "\"animations\": {";
 			
@@ -360,23 +418,23 @@ package com.mcleodgaming.spritesatchel.core
 			
 			jsonData += tabs + "}";
 			
+			var	fs:FileStream = new FileStream();
+			fs.open(new File(jsonPath), FileMode.WRITE);
+			fs.addEventListener(Event.SELECT, function(e:Event):void {} ); 
+			fs.addEventListener(IOErrorEvent.IO_ERROR,  function(e:IOErrorEvent):void {
+				//EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed with IOError.")); 
+			}); 
+			fs.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent):void {
+				//EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed with SecurityError.")); 
+			}); 
+			fs.addEventListener(ProgressEvent.PROGRESS, function(e:Event):void {}); 
+			fs.addEventListener(Event.COMPLETE, function(e:Event):void { 
+			});
+			fs.writeUTFBytes(jsonData);
+			fs.close();
+			
 			var bArr:ByteArray = new ByteArray();
 			bArr.writeUTFBytes(jsonData);
-			
-			var fileReference:FileReference = new FileReference();
-			fileReference.addEventListener(Event.SELECT, function(e:Event):void {} ); 
-			fileReference.addEventListener(IOErrorEvent.IO_ERROR, function(e:IOErrorEvent):void {
-				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.EXPORT_COMPLETE, "Export job completed with IOError.")); 
-			}); 
-			fileReference.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent):void {
-				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.EXPORT_COMPLETE, "Export job completed with SecurityError.")); 
-			}); 
-			fileReference.addEventListener(ProgressEvent.PROGRESS,  function(e:ProgressEvent):void {}); 
-			fileReference.addEventListener(Event.COMPLETE, function(e:Event):void { 
-				dispatchEvent(new SpriteSheetEvent(SpriteSheetEvent.EXPORT_COMPLETE, "Export job completed.")); 
-			});
-			
-			fileReference.save(bArr, _name + ".json");
 		}
 	}
 }

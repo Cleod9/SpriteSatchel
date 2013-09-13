@@ -1,9 +1,13 @@
 package com.mcleodgaming.spritesatchel.core 
 {
+	import com.adobe.utils.StringUtil;
+	import flash.display.MovieClip;
+	import flash.filesystem.File;
 	public class SatchelConfig 
 	{
-		public static const VERSION:String = "0.1";
+		public static const VERSION:String = "0.4.0";
 		
+		private var _date:Date;
 		private var _filePath:String;
 		private var _projectName:String;
 		private var _timestamp:Date;
@@ -14,15 +18,24 @@ package com.mcleodgaming.spritesatchel.core
 		
 		public function SatchelConfig():void
 		{
+			_date = new Date();
 			_filePath = null;
-			_projectName = "";
+			_projectName = "Untitled";
 			_timestamp = new Date();
 			_exportMode = "createjs";
-			_jsonExportPath = "";
-			_pngExportPath = "";
+			_jsonExportPath = File.desktopDirectory.nativePath + File.separator + ["assets", "json"].join(File.separator);
+			_pngExportPath = File.desktopDirectory.nativePath + File.separator + ["assets", "images"].join(File.separator);
 			_sources = new Vector.<SatchelSource>();
 		}
 		
+		public function get ModifiedDate():Date
+		{
+			return _date;
+		}
+		public function set ModifiedDate(value:Date):void
+		{
+			_date = value;
+		}
 		public function get FilePath():String
 		{
 			return _filePath;
@@ -53,7 +66,7 @@ package com.mcleodgaming.spritesatchel.core
 		}
 		public function set JSONExportPath(value:String):void
 		{
-			_jsonExportPath = value;
+			_jsonExportPath = StringUtil.trim(value);
 		}
 		public function get PNGExportPath():String
 		{
@@ -61,20 +74,57 @@ package com.mcleodgaming.spritesatchel.core
 		}
 		public function set PNGExportPath(value:String):void
 		{
-			_pngExportPath = value;
+			_pngExportPath = StringUtil.trim(value);
 		}
 		public function get Sources():Vector.<SatchelSource>
 		{
 			return _sources;
 		}
 		
-		public function addSource(path:String):void
+		public function reset():void
 		{
-			_sources.push(new SatchelSource(path));
+			_filePath = null;
+			_projectName = "";
+			_timestamp = null;
+			_timestamp = new Date();
+			_exportMode = "createjs";
+			_jsonExportPath = "";
+			_pngExportPath = "";
+			_sources = null;
+			_sources = new Vector.<SatchelSource>();
 		}
-		public function dispose():void
+		public function exportXML():XML
 		{
+			_date = new Date();
 			
+			var spritesatchel:XML = new XML("<spritesatchel />");
+			spritesatchel.@version = SatchelConfig.VERSION;
+			
+			var project:XML = new XML("<project />");
+			project.@name = _projectName;
+			project.@timestamp = _date.toUTCString();
+			
+			var config:XML = new XML("<config />");
+			config.appendChild(new XML("<exportMode>" + _exportMode + "</exportMode>"));
+			
+			config.appendChild(new XML("<jsonExportPath>" + _jsonExportPath + "</jsonExportPath>"));
+			config.appendChild(new XML("<pngExportPath>" + _pngExportPath + "</pngExportPath>"));
+			
+			var sources:XML = new XML("<sources />");
+			for (var i:int = 0; i < _sources.length; i++)
+			{
+				var file:XML = new XML("<file />");
+				if(!_sources[i].Export)
+					file.@export = "false";
+				file.appendChild(new File(_sources[i].Path).nativePath);
+				sources.appendChild(file);
+			}
+			
+			spritesatchel.appendChild(project);
+			project.appendChild(config);
+			project.appendChild(sources);
+			
+			return spritesatchel;
 		}
 	}
 

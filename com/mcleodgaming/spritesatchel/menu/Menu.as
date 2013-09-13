@@ -21,21 +21,21 @@ package com.mcleodgaming.spritesatchel.menu
 			_container = new MovieClip();
 			_clickBlocker = new MovieClip();
 			_clickBlocker.graphics.beginFill(0x000000, 0.5);
-			_clickBlocker.graphics.drawRect( -2, -2, Main.Width + 4, Main.Height + 4);
+			_clickBlocker.graphics.drawRect( -50, -50, Main.Width + 100, Main.Height + 100);
 			_clickBlocker.graphics.endFill();
 			_clickBlocker.buttonMode = true;
 			_clickBlocker.useHandCursor = false;
 			
 			_secondaryClickBlocker = new MovieClip();
 			_secondaryClickBlocker.graphics.beginFill(0x000000, 0.5);
-			_secondaryClickBlocker.graphics.drawRect( -2, -2, Main.Width + 4, Main.Height + 4);
+			_secondaryClickBlocker.graphics.drawRect( -50, -50, Main.Width + 100, Main.Height + 100);
 			_secondaryClickBlocker.graphics.endFill();
 			_secondaryClickBlocker.buttonMode = true;
 			_secondaryClickBlocker.useHandCursor = false;
 			
 			_bgBlocker = new MovieClip();
 			_bgBlocker.graphics.beginFill(0x000000, 0.3);
-			_bgBlocker.graphics.drawRect( -2, -2, Main.Width + 4, Main.Height + 4);
+			_bgBlocker.graphics.drawRect( -50, -50, Main.Width + 100, Main.Height + 100);
 			_bgBlocker.graphics.endFill();
 		}
 		

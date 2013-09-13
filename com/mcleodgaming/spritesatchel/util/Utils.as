@@ -5,6 +5,7 @@
    import flash.display.BitmapData;
    import flash.display.DisplayObjectContainer;
    import flash.display.MovieClip;
+   import flash.filesystem.File;
    import flash.geom.ColorTransform;
    import flash.geom.Rectangle;
    import flash.geom.Matrix;
@@ -23,6 +24,16 @@
 			for (var i:int = 0; i < target.totalFrames; i++)
 			{
 				target.addFrameScript(i, null);
+			}
+		}
+		public static function removeChildActionScript(target:MovieClip):void
+		{
+			for (var i:int = 0; i < target.numChildren; i++)
+			{
+				if (target.getChildAt(i) is MovieClip)
+				{
+					Utils.removeActionScript(target.getChildAt(i) as MovieClip);
+				}
 			}
 		}
 		public static function getVisibleBounds(source:DisplayObject, targetCoordinateSpace:DisplayObject):Rectangle
@@ -94,6 +105,13 @@
 				if (item.name() == nodeName)
 					return item;
 			return null;
+		}
+		public static function toRelativePath(currentDirectory:String, targetDirectory:String):String
+		{
+			var index:int = targetDirectory.indexOf(currentDirectory);
+			if (currentDirectory && targetDirectory && targetDirectory.indexOf(currentDirectory) == 0)
+				targetDirectory = "." + File.separator + targetDirectory.substr(currentDirectory.length + File.separator.length);
+			return targetDirectory;
 		}
 	}
 }
