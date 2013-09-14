@@ -5,7 +5,7 @@ package com.mcleodgaming.spritesatchel.core
 	import flash.filesystem.File;
 	public class SatchelConfig 
 	{
-		public static const VERSION:String = "0.4.0";
+		public static const VERSION:String = "0.4.1";
 		
 		private var _date:Date;
 		private var _filePath:String;
@@ -116,6 +116,8 @@ package com.mcleodgaming.spritesatchel.core
 				var file:XML = new XML("<file />");
 				if(!_sources[i].Export)
 					file.@export = "false";
+				if (_sources[i].ExcludeList.length > 0)
+					file.@exclude = _sources[i].ExcludeList.join(",");
 				file.appendChild(new File(_sources[i].Path).nativePath);
 				sources.appendChild(file);
 			}

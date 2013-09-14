@@ -38,24 +38,22 @@
 		}
 		public static function getVisibleBounds(source:DisplayObject, targetCoordinateSpace:DisplayObject):Rectangle
 		{ 
-			//var a:Rectangle = source.getBounds(targetCoordinateSpace);
-			//a.x = 0;
-			//a.y = 0;
-				//return a;
 			//Based on: http://snipplr.com/view/63449/
+			var rect:Rectangle = source.getBounds(targetCoordinateSpace);
 			var matrix:Matrix = new Matrix()
-			matrix.tx = -source.getBounds(targetCoordinateSpace).x;
-			matrix.ty = -source.getBounds(targetCoordinateSpace).y;
+			matrix.tx = -rect.x;
+			matrix.ty = -rect.y;
 			
 			if (source.width == 0 || source.height == 0)
-				return source.getBounds(targetCoordinateSpace);
+				return rect;
 			 
 			var data:BitmapData = new BitmapData(source.width, source.height, true, SpriteSheet.TRANS_COLOR);
-			//data.fillRect(data.rect, 0xFFFFFF);
 			data.draw(source, matrix);
-			//var bounds : Rectangle = data.getColorBoundsRect(0xFFFFFF, SpriteSheet.TRANS_COLOR, false);
 			var bounds : Rectangle = data.getColorBoundsRect(0xFFFFFFFF, SpriteSheet.TRANS_COLOR, false);
 			data.dispose();
+			
+			bounds.x += rect.x;
+			bounds.y += rect.y;
 			
 			return bounds;
 		}

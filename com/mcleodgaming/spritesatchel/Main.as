@@ -100,7 +100,6 @@ package com.mcleodgaming.spritesatchel
 			m_saveProject.keyEquivalent = "s";
 			m_saveProjectAs.keyEquivalent = "S";
 			m_openProject.keyEquivalent = "o";
-			m_publish.keyEquivalent = "w";
 			m_exit.keyEquivalent = "w";
 			
 			//Add menu items to menus

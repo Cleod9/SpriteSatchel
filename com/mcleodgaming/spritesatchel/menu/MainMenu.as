@@ -1,5 +1,6 @@
 package com.mcleodgaming.spritesatchel.menu
 {
+	import com.adobe.utils.StringUtil;
 	import com.bit101.components.CheckBox;
 	import com.bit101.components.ComboBox;
 	import com.bit101.components.Label;
@@ -39,6 +40,7 @@ package com.mcleodgaming.spritesatchel.menu
 	public class MainMenu extends Menu
 	{
 		private var _registrationPoint:MovieClip;
+		private var _currentSourceFile:SatchelSource;
 		private var _currentSourceClip:MovieClip;
 		private var _outputText:TextField;
 		
@@ -60,6 +62,7 @@ package com.mcleodgaming.spritesatchel.menu
 		{
 			super();
 			
+			_currentSourceFile = null;
 			_currentSourceClip = null;
 			
 			_registrationPoint = new MovieClip();
@@ -110,7 +113,7 @@ package com.mcleodgaming.spritesatchel.menu
 			_pngExportPathButton = new PushButton(_container, 175, 300, "PNG Output Path");
 			_pngExportPathButton.width = 100;
 			
-			_manifestLabel = new Label(_container, 680, 10, "Master Manifiest:");
+			_manifestLabel = new Label(_container, 680, 10, "Manifiest:");
 			
 			_spriteSourceDropdown = new ComboBox(_container, 680, 30, "<Select a Clip>");
 			_spriteSourceDropdown.width = 200;
@@ -133,6 +136,7 @@ package com.mcleodgaming.spritesatchel.menu
 			//Add Event listeners
 			super.makeEvents();
 			
+			_sourcesList.addEventListener(Event.SELECT, fileSource_CLICK);
 			_spriteSourceDropdown.addEventListener(Event.SELECT, spriteSource_CLICK);
 			_animationDropdown.addEventListener(Event.SELECT, animation_CLICK);
 			_exportCheckbox.addEventListener(MouseEvent.CLICK, export_CLICK);
@@ -148,6 +152,7 @@ package com.mcleodgaming.spritesatchel.menu
 			//Kill event listeners
 			super.killEvents();
 			
+			_sourcesList.removeEventListener(Event.SELECT, fileSource_CLICK);
 			_spriteSourceDropdown.removeEventListener(Event.SELECT, spriteSource_CLICK);
 			_animationDropdown.removeEventListener(Event.SELECT, animation_CLICK);
 			_exportCheckbox.removeEventListener(MouseEvent.CLICK, export_CLICK);
@@ -174,6 +179,7 @@ package com.mcleodgaming.spritesatchel.menu
 		private function loadAnimationList(source:MovieClip):void
 		{
 			_animationDropdown.removeAll();
+			_animationDropdown.defaultLabel = _animationDropdown.defaultLabel;
 			var currentFrame:int = 1;
 			for (var i:int = 0; i < source.currentLabels.length; i++)
 			{
@@ -197,6 +203,7 @@ package com.mcleodgaming.spritesatchel.menu
 		private function resetOptions():void
 		{
 			_animationDropdown.removeAll();
+			_animationDropdown.defaultLabel = _animationDropdown.defaultLabel;
 			_exportCheckbox.selected = false;
 		}
 		public function println(str:String):void
@@ -219,6 +226,7 @@ package com.mcleodgaming.spritesatchel.menu
 				{
 					addClickBlocker();
 					_spriteSourceDropdown.removeAll();
+					_spriteSourceDropdown.defaultLabel = _spriteSourceDropdown.defaultLabel;
 					removeSourceClip();
 					setOptionsEnabled(false);
 					if (project.@name)
@@ -236,7 +244,7 @@ package com.mcleodgaming.spritesatchel.menu
 					{
 						for each(node in sources.children())
 						{
-							importSWF(new File(node), { export: (node.@export == "false") ? false : true});
+							importSWF(new File(node), { export: (node.@export == "false") ? false : true, exclude: (node.hasOwnProperty("@exclude") && StringUtil.trim(node.@exclude) != "") ? node.@exclude : null });
 						}
 					}
 					//Update options
@@ -267,10 +275,12 @@ package com.mcleodgaming.spritesatchel.menu
 		}
 		public function importSWF(file:File, settings:Object = null):void
 		{
+			var loadExcludeSettingsFromSWF:Boolean = (!settings);
 			if (!settings)
-				settings = { export: true };
+				settings = { export: true, exclude: null };
 			var loader:Loader = new Loader();
 			var loaderContext:LoaderContext = new LoaderContext();
+			var i:int = 0;
 			loaderContext.allowCodeImport = true;
 			loaderContext.allowLoadBytesCodeExecution = true;
 			loaderContext.applicationDomain = new ApplicationDomain(Main.Root.loaderInfo.applicationDomain);
@@ -282,10 +292,26 @@ package com.mcleodgaming.spritesatchel.menu
 				var source:SatchelSource = new SatchelSource((loader.content as MovieClip) ? loader.content as MovieClip : null, file.nativePath);
 				if (settings.export !== undefined)
 					source.Export = settings.export;
+					
+				//For SWFs opened directly, load the manifest individual exclude settings
+				if (loadExcludeSettingsFromSWF && source.SourceClip.manifest)
+				{
+					for (i = 0; i < source.SourceClip.manifest.length; i++)
+					{
+						if (!(source.SourceClip.manifest[i].exclude == undefined || !source.SourceClip.manifest[i].exclude))
+							source.ExcludeList.push(source.SourceClip.manifest[i].linkage);
+					}
+				} else if(settings.exclude)
+				{
+					//Grab data passed in from XML
+					var excludeList:Array = settings.exclude.split(",");
+					for (i = 0; i < source.SourceClip.manifest.length; i++)
+					{
+						if (settings.exclude.indexOf(source.SourceClip.manifest[i].linkage) >= 0)
+							source.ExcludeList.push(source.SourceClip.manifest[i].linkage);
+					}
+				}
 				Main.Config.Sources.push(source);
-				processSource(source); 
-				if(_spriteSourceDropdown.items.length > 0)
-					setOptionsEnabled(true); 
 				_sourcesList.addItem( { label: source.Path, source: source} );
 			});
 			loader.contentLoaderInfo.addEventListener(ProgressEvent.PROGRESS,  function(e:ProgressEvent):void { /*println("Loader progressing...");*/ });
@@ -298,12 +324,13 @@ package com.mcleodgaming.spritesatchel.menu
 			{
 				println("[Error] Invalid SWF");
 			} else {
-				println("Processing manifest for \"" + source.Path + "\"...");
 				if (!source.SourceClip.manifest)
 				{
 					println("[Error] \"" + source.Path + "\". is missing manifest Array.");
 				} else
 				{
+					_spriteSourceDropdown.removeAll();
+					_spriteSourceDropdown.defaultLabel = _spriteSourceDropdown.defaultLabel;
 					//Add items from manifest to the drop down
 					for (var i:* in source.SourceClip.manifest)
 						if(source.SourceClip.manifest[i].linkage)
@@ -318,20 +345,20 @@ package com.mcleodgaming.spritesatchel.menu
 			var processTimer:Timer = new Timer(20);
 			var exportTimer:Timer = new Timer(20);
 			var index:int = 0; 
-			var readyToProcessClip:Boolean = true;
+			var readyToProcessManifest:Boolean = true;
 			addClickBlocker();
-			var clipProcessor:Function = function(e:TimerEvent):void {
-				if (!readyToProcessClip)
+			var manifestProcessor:Function = function(e:TimerEvent):void {
+				if (!readyToProcessManifest)
 					return;
 				if (index > Main.Config.Sources.length - 1)
 				{
-					processTimer.removeEventListener(TimerEvent.TIMER, clipProcessor);
+					processTimer.removeEventListener(TimerEvent.TIMER, manifestProcessor);
 					processTimer.stop();
 					removeClickBlocker();
 					println("Publish Complete!");
 					return;
 				}
-				readyToProcessClip = false;
+				readyToProcessManifest = false;
 				
 				var source:SatchelSource = Main.Config.Sources[index];
 				
@@ -339,29 +366,39 @@ package com.mcleodgaming.spritesatchel.menu
 				if (!source.SourceClip.manifest)
 				{
 					println("[Error] \"" + source.Path + "\". is missing manifest Array.");
+				} else if (!source.Export)
+				{
+					readyToProcessManifest = true;
+					index++;
+					return;
 				} else
 				{
 					//Asynchronously for each resource in the manifiest
 					var i:int = 0;
-					var readyToProcessFrame:Boolean = true;
-					var frameProcessor:Function = function(e:TimerEvent):void {
-						if (!readyToProcessFrame)
+					var readyToProcessClip:Boolean = true;
+					var clipProcessor:Function = function(e:TimerEvent):void {
+						if (!readyToProcessClip)
 							return;
 						if (i >= source.SourceClip.manifest.length)
 						{
-							exportTimer.removeEventListener(TimerEvent.TIMER, frameProcessor);
+							exportTimer.removeEventListener(TimerEvent.TIMER, clipProcessor);
 							exportTimer.stop();
 							println("Export Complete.");
 							if (index > Main.Config.Sources.length - 1)
 							{
-								processTimer.removeEventListener(TimerEvent.TIMER, clipProcessor);
+								processTimer.removeEventListener(TimerEvent.TIMER, manifestProcessor);
 								processTimer.stop();
 								removeClickBlocker();
 								println("Publish Complete!");
 							}
 							return;
+						} else if (source.ExcludeList.indexOf(source.SourceClip.manifest[i].linkage) >= 0)
+						{
+							i++;
+							return;
 						}
-						readyToProcessFrame = false;
+						readyToProcessClip = false;
+						
 						println("Now processing \"" + source.SourceClip.manifest[i].linkage + "\"...");
 						var resource:Object = source.SourceClip.manifest[i];
 						
@@ -383,7 +420,7 @@ package com.mcleodgaming.spritesatchel.menu
 							EventManager.dispatcher.removeEventListener(SpriteSatchelEvent.IMPORT_COMPLETE, importCompleteFunc);
 							spritesheet.exportAll(Main.Config.PNGExportPath, Main.Config.JSONExportPath);
 						};
-						var exportCompleteFunc:Function =  function(e:SpriteSatchelEvent):void { 
+						var exportCompleteFunc:Function =  function(e:SpriteSatchelEvent):void {
 							println(e.message);
 							if (importedMC.parent)
 								importedMC.parent.removeChild(importedMC);
@@ -393,26 +430,28 @@ package com.mcleodgaming.spritesatchel.menu
 							EventManager.dispatcher.removeEventListener(SpriteSatchelEvent.EXPORT_COMPLETE, exportCompleteFunc);
 							
 							//This will allow the timer to continue
-							readyToProcessFrame = true;
 							readyToProcessClip = true;
+							readyToProcessManifest = true;
 						};
+						//Initiate conversion process
+						
+						e.updateAfterEvent();
+						i++;
+						
 						EventManager.dispatcher.addEventListener(SpriteSatchelEvent.STATUS, statusFunc);
 						EventManager.dispatcher.addEventListener(SpriteSatchelEvent.IMPORT_COMPLETE, importCompleteFunc);
 						EventManager.dispatcher.addEventListener(SpriteSatchelEvent.EXPORT_COMPLETE, exportCompleteFunc);
 						
-						//Initiate conversion process
 						spritesheet.importMovieClip(importedMC);
-						e.updateAfterEvent();
-						i++;
 					}
 					//Start the process
-					exportTimer.addEventListener(TimerEvent.TIMER, frameProcessor);
+					exportTimer.addEventListener(TimerEvent.TIMER, clipProcessor);
 					exportTimer.start();
 				}
 				e.updateAfterEvent();
 				index++
 			}
-			processTimer.addEventListener(TimerEvent.TIMER, clipProcessor);
+			processTimer.addEventListener(TimerEvent.TIMER, manifestProcessor);
 			processTimer.start();
 		}
 		private function removeSourceClip():void
@@ -422,27 +461,40 @@ package com.mcleodgaming.spritesatchel.menu
 					_currentSourceClip.parent.removeChild(_currentSourceClip);
 			_currentSourceClip = null;
 		}
+		private function fileSource_CLICK(e:Event):void
+		{
+			if (!_sourcesList.selectedItem)
+				return;
+			var item:Object = _sourcesList.selectedItem;
+			var source:SatchelSource = item.source as SatchelSource;
+			if (_currentSourceFile != source)
+			{
+				removeSourceClip();
+				_currentSourceFile = source;
+				processSource(_currentSourceFile);
+				setOptionsEnabled(true);
+			}
+		}
 		private function spriteSource_CLICK(e:Event):void
 		{
+			if (!_spriteSourceDropdown.selectedItem)
+				return;
 			var item:Object = _spriteSourceDropdown.selectedItem;
-			if (item && item.source as SatchelSource)
-			{
-				//Remove old clip if there was one
-				removeSourceClip();
-				//From the source, determine the MovieClip we will be attaching to the stage
-				var source:SatchelSource = item.source as SatchelSource;
-				_currentSourceClip = new (Utils.getLibraryItem([source.SourceClip], item.linkage))() as MovieClip;
-				_currentSourceClip.x = _registrationPoint.x;
-				_currentSourceClip.y = _registrationPoint.y
-				_container.addChildAt(_currentSourceClip, 0);
-				Utils.removeChildActionScript(_currentSourceClip);
-				
-				//Enable animation list and add available animations to the list
-				loadOptions(source);
-				loadAnimationList(_currentSourceClip);
-				setOptionsEnabled(true);
-				_exportCheckbox.selected = source.Export;
-			}
+			var source:SatchelSource = item.source as SatchelSource;
+			
+			//Remove old clip if there was one
+			removeSourceClip();
+			//From the source, determine the MovieClip we will be attaching to the stage
+			_currentSourceClip = new (Utils.getLibraryItem([source.SourceClip], item.linkage))() as MovieClip;
+			_currentSourceClip.x = _registrationPoint.x;
+			_currentSourceClip.y = _registrationPoint.y
+			_container.addChildAt(_currentSourceClip, 0);
+			Utils.removeChildActionScript(_currentSourceClip);
+			
+			//Enable animation list and add available animations to the list
+			loadOptions(source);
+			loadAnimationList(_currentSourceClip);
+			_exportCheckbox.selected = (source.ExcludeList.indexOf(item.linkage) < 0);
 		}
 		private function animation_CLICK(e:Event):void
 		{
@@ -457,7 +509,17 @@ package com.mcleodgaming.spritesatchel.menu
 			var item:Object = _spriteSourceDropdown.selectedItem;
 			if (item && item.source as SatchelSource)
 			{
-				(item.source as SatchelSource).Export = _exportCheckbox.selected;
+				var source:SatchelSource = (item.source as SatchelSource);
+				var index:int = source.ExcludeList.indexOf(item.linkage);
+				if (!_exportCheckbox.selected)
+				{
+					if (index < 0)
+						source.ExcludeList.push(item.linkage);
+				} else
+				{
+					if (index >= 0)
+						source.ExcludeList.splice(index, 1);
+				}
 				EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.FILE_CHANGED, "Project has been modified."));
 			}
 		}
@@ -520,6 +582,7 @@ package com.mcleodgaming.spritesatchel.menu
 						if (_spriteSourceDropdown.selectedIndex == i && _spriteSourceDropdown.items[i].source == source)
 						{
 							_animationDropdown.removeAll();
+							_animationDropdown.defaultLabel = _animationDropdown.defaultLabel;
 							removeSourceClip();
 							resetOptions();
 						}

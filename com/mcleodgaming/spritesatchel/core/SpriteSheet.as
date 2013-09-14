@@ -133,52 +133,33 @@ package com.mcleodgaming.spritesatchel.core
 				} else
 				{
 					//Ready to capture Bitmap of this frame
-					var boundsRect:Rectangle = mc.getBounds(mc);
-					var optimalDimensions:Rectangle = Utils.getVisibleBounds(mc, null); //Only capture visible area
-					var registrationRect:Rectangle = mc.getBounds(mc.parent); //Get registration point based on parent
+					//TODO: Fix bug where in optimize-mode we can't have MC scaling, falls back to getBounds()
+					var optimize:Boolean = true;
+					var boundsRect:Rectangle = (optimize && (scaleX == 1 && scaleY == 1)) ?  Utils.getVisibleBounds(mc, mc) : mc.getBounds(mc);
+					var registrationPoint:Point = new Point();
+			
+					//Padding (Always add additional 2 pixels due to getBounds() clipping issue)
+					boundsRect.offset( -_padding, -_padding);
+					boundsRect.width += _padding * 2 + 2;
+					boundsRect.height += _padding * 2 + 2;
 					
-					/*boundsRect.x += optimalDimensions.x;
-					boundsRect.y += optimalDimensions.y;
-					boundsRect.width = optimalDimensions.width;
-					boundsRect.height = optimalDimensions.height;
-					
-					registrationRect.x += optimalDimensions.x;
-					registrationRect.y += optimalDimensions.y;*/
-					
-					//Add optimal dimension offset to bounds rect
-					boundsRect.x += optimalDimensions.x - _padding;
-					boundsRect.y += optimalDimensions.y - _padding;
-					
-					//Override width with optimized width
-					boundsRect.width = Math.ceil(optimalDimensions.width + _padding * 2);
-					boundsRect.height = Math.ceil(optimalDimensions.height + _padding * 2);
-					
-					//Fix registration point from the slicing
-					registrationRect.x += optimalDimensions.x - _padding;
-					registrationRect.y += optimalDimensions.y - _padding;
-					
-					
-					//Round everything
+					//Round down the bounds to prevent jitter
 					boundsRect.x = Math.floor(boundsRect.x);
 					boundsRect.y = Math.floor(boundsRect.y);
-					registrationRect.x = Math.round(registrationRect.x);
-					registrationRect.y = Math.round(registrationRect.y);
 					
+					//Registration point relative to parent clip
+					registrationPoint.x = Math.round((boundsRect.x * scaleX) + mc.x);
+					registrationPoint.y = Math.round((boundsRect.y * scaleY) + mc.y);
 					
 					if (boundsRect.width == 0)
 					{
 						//The MC didn't contain any graphics, so we'll just make a blank pixel here
 						boundsRect.width = 1;
 						boundsRect.height = 1;
-					} else
-					{
-						//Add an extra 2 pixel buffer due to clipping issue with getBounds()
-						boundsRect.width += 2;
-						boundsRect.height += 2;
 					}
 					
 					//Create the blank bitmap for the frame and get transform info
-					var currentFrameBitmap:BitmapData = new BitmapData(int(boundsRect.width * scaleX + 0.5), int(boundsRect.height * scaleY + 0.5), true, SpriteSheet.TRANS_COLOR);
+					var currentFrameBitmap:BitmapData = new BitmapData(Math.ceil(boundsRect.width * scaleX), Math.ceil(boundsRect.height * scaleY), true, SpriteSheet.TRANS_COLOR);
 					
 					//Get offset information (prevOffset refers to the position of the top left of the graphic within the MC bounds)
 					var prevOffset:Point = new Point();
@@ -201,7 +182,7 @@ package com.mcleodgaming.spritesatchel.core
 					//On the off chance we have a sprite that has the EXACT same pixels as this one, we want to save memory by referring back to that sprite instead
 					//Basically what we're doing here is making the "location" of the current sprite on the sprite sheet the same as a pre-existing one
 					var skipSheet:Boolean = false;
-					var upcomingBMPDat:BitmapData = new BitmapData(int(boundsRect.width * scaleX + 0.5), int(boundsRect.height * scaleY + 0.5), true, SpriteSheet.TRANS_COLOR);
+					var upcomingBMPDat:BitmapData = new BitmapData(Math.ceil(boundsRect.width * scaleX), Math.ceil(boundsRect.height * scaleY), true, SpriteSheet.TRANS_COLOR);
 					upcomingBMPDat.draw(mc, offset, mc.transform.colorTransform, null, null, true);
 					for (var j:int = 0; j < _frames; j++)
 					{
@@ -248,7 +229,7 @@ package com.mcleodgaming.spritesatchel.core
 					//At this point we have the location that the sprite is being put on the sprite sheet, so let's save this info in a Rectangle object
 					
 					//Save this as our "previous" sprite and add it to our animation frames 
-					prevSprite = new SpriteObject(_frames++, new Rectangle(_currentPoint.x, _currentPoint.y, currentFrameBitmap.width, currentFrameBitmap.height), new Point(registrationRect.x, registrationRect.y));
+					prevSprite = new SpriteObject(_frames++, new Rectangle(_currentPoint.x, _currentPoint.y, currentFrameBitmap.width, currentFrameBitmap.height),registrationPoint.clone());
 					animation.sprites.push(prevSprite);
 					
 					//Before we draw, let's make sure we can actually fit the sprite on our sheet
@@ -396,7 +377,7 @@ package com.mcleodgaming.spritesatchel.core
 			
 			jsonData += tabs + "]," + Main.NEWLINE;
 			
-			jsonData += tabs + "\"images\": [\"" + Main.Config.PNGExportPath + File.separator + _name + ".png\"]," + Main.NEWLINE;
+			jsonData += tabs + ("\"images\": [\"" + Main.Config.PNGExportPath + File.separator + _name + ".png\"]," + Main.NEWLINE).split(File.separator).join("/");
 			
 			jsonData += tabs + "\"animations\": {";
 			

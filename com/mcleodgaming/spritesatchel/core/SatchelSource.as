@@ -6,12 +6,14 @@ package com.mcleodgaming.spritesatchel.core
 		private var _sourceClip:MovieClip;
 		private var _path:String;
 		private var _export:Boolean;
+		private var _excludeList:Vector.<String>;
 		
 		public function SatchelSource(sourceClip:MovieClip, path:String) 
 		{
 			_sourceClip = sourceClip;
 			_path = path;
 			_export = true;
+			_excludeList = new Vector.<String>();
 		}
 		
 		public function get SourceClip():MovieClip
@@ -37,6 +39,10 @@ package com.mcleodgaming.spritesatchel.core
 		public function set Path(value:String):void
 		{
 			_path = value;
+		}
+		public function get ExcludeList():Vector.<String>
+		{
+			return _excludeList;
 		}
 		
 		
