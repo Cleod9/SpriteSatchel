@@ -2,6 +2,8 @@ package com.mcleodgaming.spritesatchel.core
 {
 	import com.adobe.images.PNGEncoder;
 	import com.mcleodgaming.spritesatchel.controllers.MenuController;
+	import com.mcleodgaming.spritesatchel.core.collision.HitBoxAnimation;
+	import com.mcleodgaming.spritesatchel.core.collision.HitBoxSprite;
 	import com.mcleodgaming.spritesatchel.events.EventManager;
 	import com.mcleodgaming.spritesatchel.events.SpriteSatchelEvent;
 	import com.mcleodgaming.spritesatchel.Main;
@@ -116,7 +118,10 @@ package com.mcleodgaming.spritesatchel.core
 			scaleX = origScaleX;
 			scaleY = origScaleY;
 			
+			animation.hitboxes = HitBoxAnimation.createHitBoxAnimation(_name + "_" + name, mc, mc.parent, null);
+			
 			//For each frame in the movie clip we are importing
+			mc.gotoAndStop(1);
 			for (var i:int = 1; i <= mc.totalFrames; i++, frameNum++)
 			{
 				//Force MC to gotoAndStop() on next frame
@@ -132,6 +137,13 @@ package com.mcleodgaming.spritesatchel.core
 					animation.sprites.push((prevSprite != null) ? prevSprite.clone() : null);
 				} else
 				{
+					for (var hindex:int = 0; hindex < mc.numChildren; hindex++)
+					{
+						if (mc.getChildAt(hindex) is MovieClip && MovieClip(mc.getChildAt(hindex)).id && !MovieClip(mc.getChildAt(hindex)).forceVisible)
+						{
+							mc.getChildAt(hindex).visible = false;
+						}
+					}
 					//Ready to capture Bitmap of this frame
 					//TODO: Fix bug where in optimize-mode we can't have MC scaling, falls back to getBounds()
 					var optimize:Boolean = true;
@@ -337,6 +349,7 @@ package com.mcleodgaming.spritesatchel.core
 		}
 		public function saveJSON(jsonPath:String):void
 		{
+			var i:int = 0;
 			//First fix path
 			var prefix:String = "";
 			if (jsonPath.indexOf(".") == 0)
@@ -386,11 +399,31 @@ package com.mcleodgaming.spritesatchel.core
 			{
 				jsonData += "\"" + _animations[animationNum].id + "\": {";
 				var framesList:Array = new Array();
-				for (var i:int = 0; i < _animations[animationNum].sprites.length; i++)
+				for (i = 0; i < _animations[animationNum].sprites.length; i++)
 				{
 					framesList.push(_animations[animationNum].sprites[i].imageIndex);
 				}
 				jsonData += "\"frames\": [" + framesList.join(", ") + "]";
+				
+				var hitboxAnimation:HitBoxAnimation = _animations[animationNum].hitboxes || null;
+				var combinedBoxes:Array = new Array();
+				var combinedFrames:Array = new Array();
+				jsonData += ",\"hitboxes\":[";
+				if (hitboxAnimation)
+				{
+					for (var type:* in hitboxAnimation.HitFramesMap)
+					{
+						for (var frame:* in hitboxAnimation.HitFramesMap[type])
+						{
+							for (var box:* in hitboxAnimation.HitFramesMap[type][frame])
+							{
+								combinedBoxes.push(HitBoxSprite(hitboxAnimation.HitFramesMap[type][frame][box]).export(parseInt(frame)));
+							}
+						}
+					}
+				}
+				jsonData += combinedBoxes.join(",") + "]"
+				
 				jsonData += "}, ";
 			}
 			jsonData = jsonData.substr(0, jsonData.lastIndexOf(",")) + "}" + Main.NEWLINE;

@@ -8,7 +8,8 @@ set OUTPUT=%AIR_PATH%\%AIR_NAME%%AIR_TARGET%.air
 :: Package
 echo.
 echo Packaging %AIR_NAME%%AIR_TARGET%.air using certificate %CERT_FILE%...
-call adt -package %OPTIONS% %SIGNING_OPTIONS% %OUTPUT% %APP_XML% %FILE_OR_DIR%
+call adt -package %CERT_TSA% %OPTIONS% %SIGNING_OPTIONS% %OUTPUT% %APP_XML% %FILE_OR_DIR%
+call adt -migrate -storetype pkcs12 -storepass %CERT_PASS% -keystore %CERT_FILE_MIGRATE% %OUTPUT% %OUTPUT% 
 if errorlevel 1 goto failed
 goto end
 
