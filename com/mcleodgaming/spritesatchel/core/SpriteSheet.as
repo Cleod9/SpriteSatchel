@@ -285,6 +285,7 @@ package com.mcleodgaming.spritesatchel.core
 			saveSpriteSheet(pngPath);
 			saveJSON(jsonPath);
 			EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed.")); 
+			HitBoxAnimation.AnimationsList.splice(0);
 		}
 		public function saveSpriteSheet(pngPath:String):void
 		{
