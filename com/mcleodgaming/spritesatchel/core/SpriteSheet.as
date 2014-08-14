@@ -73,8 +73,8 @@ package com.mcleodgaming.spritesatchel.core
 			_spritesheet = new BitmapData(128, 128, true, SpriteSheet.TRANS_COLOR);
 			
 			var i:int = 0;
-			timer.addEventListener(TimerEvent.TIMER, function(e:TimerEvent):void { 
-				if (i > mc.totalFrames) {
+			timer.addEventListener(TimerEvent.TIMER_COMPLETE, function(e:TimerEvent):void { 
+				if (i >= mc.totalFrames) {
 					timer.stop();
 					mc.gotoAndStop(1);
 					EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.IMPORT_COMPLETE, "Import job completed. Generating PNG..."));
@@ -196,21 +196,40 @@ package com.mcleodgaming.spritesatchel.core
 					var skipSheet:Boolean = false;
 					var upcomingBMPDat:BitmapData = new BitmapData(Math.ceil(boundsRect.width * scaleX), Math.ceil(boundsRect.height * scaleY), true, SpriteSheet.TRANS_COLOR);
 					upcomingBMPDat.draw(mc, offset, mc.transform.colorTransform, null, null, true);
+					var matches:Vector.<SpriteObject> = new Vector.<SpriteObject>();
 					for (var j:int = 0; j < _frames; j++)
 					{
 						var currentSprite:SpriteObject = findByImageIndex(j);
 						if (!currentSprite)
 							continue;
 						var tmpBMPDat:BitmapData = new BitmapData(currentSprite.rect.width, currentSprite.rect.height, true, SpriteSheet.TRANS_COLOR);
-						tmpBMPDat.copyPixels(_spritesheet,currentSprite.rect, new Point(), null, null, true);
+						tmpBMPDat.copyPixels(_spritesheet, currentSprite.rect, new Point(), null, null, true);
 						if (tmpBMPDat.compare(upcomingBMPDat) == 0)
 						{
-							//Match found, reference the old data
-							animation.sprites.push(new SpriteObject(currentSprite.imageIndex, currentSprite.rect.clone(), currentSprite.registration.clone()));
+							//Save this in the list so we can check for an exact match later
+							matches.push(currentSprite);
 							skipSheet = true;
+						}
+						tmpBMPDat.dispose();
+					}
+					
+					//Check through the matches list for one that also has a matching registration point
+					for (var mindex:int = 0; mindex < matches.length; mindex++)
+					{
+						if (matches[mindex].registration.equals(registrationPoint))
+						{
+							//Exact match found, reference the old data
+							animation.sprites.push(new SpriteObject(currentSprite.imageIndex, currentSprite.rect.clone(), currentSprite.registration.clone()));
+							break;
+						} else if (mindex + 1 >= matches.length)
+						{
+							//Partial match found, we'll keep the rect data but we MUST use the new registration point
+							animation.sprites.push(new SpriteObject(_frames++, currentSprite.rect.clone(), registrationPoint.clone()));
 							break;
 						}
 					}
+					
+					//Dispose and skip next if we are on a duplicate frame
 					upcomingBMPDat.dispose();
 					if (skipSheet)
 						continue; //We're just going to use an already existing sprite
@@ -229,7 +248,7 @@ package com.mcleodgaming.spritesatchel.core
 						_currentMaxHeight = 0;
 					}
 					
-					//No longer on the first sprite i nthe row
+					//No longer on the first sprite in the row
 					_rowStart = false;
 					
 					//Save the previous width for when we move the point on the sheet later
