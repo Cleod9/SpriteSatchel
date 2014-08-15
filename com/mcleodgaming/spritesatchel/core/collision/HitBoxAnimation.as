@@ -7,7 +7,7 @@ package com.mcleodgaming.spritesatchel.core.collision
 	
 	public class HitBoxAnimation 
 	{
-		private static var m_animationsList:Array = new Array(); //For memory re-use
+		private static var m_animationsList:Object = new Object(); //For memory re-use
 		
 		private var m_name:String;
 		
@@ -25,9 +25,18 @@ package com.mcleodgaming.spritesatchel.core.collision
 			m_hitFrames = new Array();
 		}
 		
-		public static function get AnimationsList():Array
+		public static function get AnimationsList():Object
 		{
 			return m_animationsList;
+		}
+		public static function flushCache():void
+		{
+			for (var i in m_animationsList)
+			{
+				delete m_animationsList[i];
+			}
+			m_animationsList = null;
+			m_animationsList = new Object();
 		}
 		public function get HitBoxesMap():Object
 		{
