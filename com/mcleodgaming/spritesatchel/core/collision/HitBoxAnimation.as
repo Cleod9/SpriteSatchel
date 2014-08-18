@@ -82,7 +82,7 @@ package com.mcleodgaming.spritesatchel.core.collision
 						//An attack box exists with this name, let's add it to the animation
 						child = MovieClip(mc.getChildAt(j));
 						id = child.id;
-						type = id.match(/^[a-zA-Z]+/g)[0];
+						type = child.type || id.match(/^[a-zA-Z_]+/g)[0];
 						
 						//For the registration point, we'll use a temporary 1x1 pixel clip (So we can use getBounds() on it and not mess with child)
 						mc.addChild(tmpMC);
