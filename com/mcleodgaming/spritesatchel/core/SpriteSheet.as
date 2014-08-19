@@ -216,10 +216,10 @@ package com.mcleodgaming.spritesatchel.core
 					//Check through the matches list for one that also has a matching registration point
 					for (var mindex:int = 0; mindex < matches.length; mindex++)
 					{
-						if (matches[mindex].registration.equals(registrationPoint))
+						if (matches[mindex].registration.equals(registrationPoint) && matches[mindex].rect.equals(currentSprite.rect))
 						{
 							//Exact match found, reference the old data
-							animation.sprites.push(new SpriteObject(currentSprite.imageIndex, currentSprite.rect.clone(), currentSprite.registration.clone()));
+							animation.sprites.push(new SpriteObject(matches[mindex].imageIndex, matches[mindex].rect.clone(), matches[mindex].registration.clone()));
 							break;
 						} else if (mindex + 1 >= matches.length)
 						{
