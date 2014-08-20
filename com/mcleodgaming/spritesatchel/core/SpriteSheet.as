@@ -80,8 +80,8 @@ package com.mcleodgaming.spritesatchel.core
 					EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.IMPORT_COMPLETE, "Import job completed. Generating PNG..."));
 					return;
 				}
-				var frameLabel:String = (mc.currentLabel) ? mc.currentLabel : "animation" + (mc.currentFrame - 1);
 				mc.gotoAndStop(i + 1);
+				var frameLabel:String = (mc.currentLabel) ? mc.currentLabel : "animation" + (mc.currentFrame - 1);
 				EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Processing " + frameLabel + "..."));
 				for (var j:int = 0; j < mc.numChildren; j++)
 				{
@@ -200,14 +200,22 @@ package com.mcleodgaming.spritesatchel.core
 					{
 						var currentSprite:SpriteObject = findByImageIndex(j);
 						//Fail if sprite doesn't exist, the registration point doesn't match, or the rectangle is not the same height/width
-						if (!currentSprite || !currentSprite.registration.equals(registrationPoint) || !(currentFrameBitmap.rect.width === currentSprite.rect.width && currentFrameBitmap.rect.height === currentSprite.rect.height))
+						if (!currentSprite || !(currentFrameBitmap.rect.width === currentSprite.rect.width && currentFrameBitmap.rect.height === currentSprite.rect.height))
 							continue;
 						var tmpBMPDat:BitmapData = new BitmapData(currentSprite.rect.width, currentSprite.rect.height, true, SpriteSheet.TRANS_COLOR);
 						tmpBMPDat.copyPixels(_spritesheet, currentSprite.rect, new Point(), null, null, true);
 						if (tmpBMPDat.compare(upcomingBMPDat) == 0)
 						{
 							//Store the new sprite object
-							animation.sprites.push(new SpriteObject(currentSprite.imageIndex, currentSprite.rect.clone(), currentSprite.registration.clone()));
+							if (currentSprite.registration.equals(registrationPoint))
+							{
+								//Same registration point, we can re-use this slot on the sheet
+								animation.sprites.push(new SpriteObject(currentSprite.imageIndex, currentSprite.rect.clone(), currentSprite.registration.clone()));
+							} else
+							{
+								//Differing registration point, we'll have to insert a new frame index
+								animation.sprites.push(new SpriteObject(_frames++, currentSprite.rect.clone(), registrationPoint.clone()));
+							}
 							skipSheet = true;
 						}
 						tmpBMPDat.dispose();
