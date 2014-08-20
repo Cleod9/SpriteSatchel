@@ -196,37 +196,21 @@ package com.mcleodgaming.spritesatchel.core
 					var skipSheet:Boolean = false;
 					var upcomingBMPDat:BitmapData = new BitmapData(Math.ceil(boundsRect.width * scaleX), Math.ceil(boundsRect.height * scaleY), true, SpriteSheet.TRANS_COLOR);
 					upcomingBMPDat.draw(mc, offset, mc.transform.colorTransform, null, null, true);
-					var matches:Vector.<SpriteObject> = new Vector.<SpriteObject>();
-					for (var j:int = 0; j < _frames; j++)
+					for (var j:int = 0; j < _frames && !skipSheet; j++)
 					{
 						var currentSprite:SpriteObject = findByImageIndex(j);
-						if (!currentSprite)
+						//Fail if sprite doesn't exist, the registration point doesn't match, or the rectangle is not the same height/width
+						if (!currentSprite || !currentSprite.registration.equals(registrationPoint) || !(currentFrameBitmap.rect.width === currentSprite.rect.width && currentFrameBitmap.rect.height === currentSprite.rect.height))
 							continue;
 						var tmpBMPDat:BitmapData = new BitmapData(currentSprite.rect.width, currentSprite.rect.height, true, SpriteSheet.TRANS_COLOR);
 						tmpBMPDat.copyPixels(_spritesheet, currentSprite.rect, new Point(), null, null, true);
 						if (tmpBMPDat.compare(upcomingBMPDat) == 0)
 						{
-							//Save this in the list so we can check for an exact match later
-							matches.push(currentSprite);
+							//Store the new sprite object
+							animation.sprites.push(new SpriteObject(currentSprite.imageIndex, currentSprite.rect.clone(), currentSprite.registration.clone()));
 							skipSheet = true;
 						}
 						tmpBMPDat.dispose();
-					}
-					
-					//Check through the matches list for one that also has a matching registration point
-					for (var mindex:int = 0; mindex < matches.length; mindex++)
-					{
-						if (matches[mindex].registration.equals(registrationPoint) && matches[mindex].rect.equals(currentSprite.rect))
-						{
-							//Exact match found, reference the old data
-							animation.sprites.push(new SpriteObject(matches[mindex].imageIndex, matches[mindex].rect.clone(), matches[mindex].registration.clone()));
-							break;
-						} else if (mindex + 1 >= matches.length)
-						{
-							//Partial match found, we'll keep the rect data but we MUST use the new registration point
-							animation.sprites.push(new SpriteObject(_frames++, currentSprite.rect.clone(), registrationPoint.clone()));
-							break;
-						}
 					}
 					
 					//Dispose and skip next if we are on a duplicate frame

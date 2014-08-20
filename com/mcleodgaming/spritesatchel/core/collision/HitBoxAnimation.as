@@ -31,7 +31,7 @@ package com.mcleodgaming.spritesatchel.core.collision
 		}
 		public static function flushCache():void
 		{
-			for (var i in m_animationsList)
+			for (var i:* in m_animationsList)
 			{
 				delete m_animationsList[i];
 			}
