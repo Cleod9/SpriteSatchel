@@ -77,24 +77,28 @@ package com.mcleodgaming.spritesatchel.core.collision
 				//For each hit box
 				for (j = 0; j < mc.numChildren; j++)
 				{
-					if (mc.getChildAt(j) is MovieClip && MovieClip(mc.getChildAt(j)).id)
+					if (mc.getChildAt(j) is MovieClip)
 					{
-						//An attack box exists with this name, let's add it to the animation
 						child = MovieClip(mc.getChildAt(j));
-						id = child.id;
-						type = child.type || id.match(/^[a-zA-Z_]+/g)[0];
-						
-						//For the registration point, we'll use a temporary 1x1 pixel clip (So we can use getBounds() on it and not mess with child)
-						mc.addChild(tmpMC);
-						tmpMC.x = child.x;
-						tmpMC.y = child.y;
-						var regPoint:Rectangle = tmpMC.getRect(coordinateSpace);
-						var hbox:HitBoxSprite = new HitBoxSprite(type, child.getBounds(coordinateSpace), (child.circular == true), null, new Point(regPoint.x, regPoint.y), new Point(child.scaleX, child.scaleY), child.rotation, child.transform.matrix.clone(), mc.getChildIndex(child));
-						mc.removeChild(tmpMC);
-						if (hitBoxAnim.addHitBox(i + 1, hbox))
+						name = child.name;
+						id = (child.id) ? child.id : (name && name.match(/^instance/g)) ? name : null;
+						if (id)
 						{
-							hbox.Name = id;
-							//trace(mc_name + (i + 1) + ":::" + types[j].name + ":::" + child.getBounds(coordinateSpace));
+							//An attack box exists with this name, let's add it to the animation
+							type = child.type || id.match(/^[a-zA-Z_]+/g)[0];
+							
+							//For the registration point, we'll use a temporary 1x1 pixel clip (So we can use getBounds() on it and not mess with child)
+							mc.addChild(tmpMC);
+							tmpMC.x = child.x;
+							tmpMC.y = child.y;
+							var regPoint:Rectangle = tmpMC.getRect(coordinateSpace);
+							var hbox:HitBoxSprite = new HitBoxSprite(type, child.getBounds(coordinateSpace), (child.circular == true), null, new Point(regPoint.x, regPoint.y), new Point(child.scaleX, child.scaleY), child.rotation, child.transform.matrix.clone(), mc.getChildIndex(child));
+							mc.removeChild(tmpMC);
+							if (hitBoxAnim.addHitBox(i + 1, hbox))
+							{
+								hbox.Name = id;
+								//trace(mc_name + (i + 1) + ":::" + types[j].name + ":::" + child.getBounds(coordinateSpace));
+							}
 						}
 					}
 				}
