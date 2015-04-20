@@ -22,6 +22,7 @@ package com.mcleodgaming.spritesatchel
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
 	import flash.geom.Matrix;
+	import flash.html.HTMLLoader;
 	import flash.net.FileFilter;
 	import flash.net.FileReference;
 	import flash.utils.ByteArray;
@@ -140,6 +141,7 @@ package com.mcleodgaming.spritesatchel
 			m_importSWF.addEventListener(Event.SELECT, importSWF_CLICK);
 			m_publish.addEventListener(Event.SELECT, publish_CLICK);
 			m_exit.addEventListener(Event.SELECT, exit_CLICK);
+			m_about.addEventListener(Event.SELECT, about_CLICK);
 			
 			//Fix title
 			setTitle(Main.TITLE + " - " + Main.Config.ProjectName);
@@ -198,13 +200,13 @@ package com.mcleodgaming.spritesatchel
 		}
 		
 		/**
-		 * Initiates Project XML import
+		 * Initiates Project save data import
 		 * @param	e Event argument.
 		 */
 		private function openProject_CLICK(e:Event):void
 		{
 			MenuController.mainMenu.println("Awaiting Project to open...");
-			var textTypeFilter:FileFilter = new FileFilter("Sprite Satchel Project File | *.xml", "*.xml"); 
+			var textTypeFilter:FileFilter = new FileFilter("Sprite Satchel Project File | *.satchel", "*.satchel"); 
             var fs:FileStream = new FileStream();
             var openDialog:File = new File();
 			openDialog.addEventListener(Event.SELECT, function():void {
@@ -213,7 +215,7 @@ package com.mcleodgaming.spritesatchel
 				fs.open(openDialog, FileMode.READ);
 				var input:String = fs.readUTFBytes(fs.bytesAvailable);
 				fs.close();
-				MenuController.mainMenu.loadProjectXML(XML(input));
+				MenuController.mainMenu.loadProjectJSON(input);
 				Main.setTitle(Main.TITLE + " - " + Main.Config.ProjectName);
 			});
 			openDialog.addEventListener(Event.CANCEL, function():void { MenuController.mainMenu.println("Action cancelled"); } );
@@ -221,7 +223,7 @@ package com.mcleodgaming.spritesatchel
 		}
 		
 		/**
-		 * Saves Project XML
+		 * Saves Project Data to file as JSON
 		 * @param	e Event argument.
 		 */
 		private function saveProject_CLICK(e:Event):void
@@ -232,7 +234,7 @@ package com.mcleodgaming.spritesatchel
 			{
 				fs = new FileStream();
 				fs.open(file, FileMode.WRITE);
-				fs.writeUTFBytes(_config.exportXML());
+				fs.writeUTFBytes(_config.export());
 				fs.close();
 				MenuController.mainMenu.println("Save complete. (" + _config.ModifiedDate.toUTCString() + ")"); 
 				m_fileChanged = false;
@@ -244,33 +246,39 @@ package com.mcleodgaming.spritesatchel
 		}
 		
 		/**
-		 * Saves Project XML to a new location
+		 * Saves Project JSON to a new location
 		 * @param	e Event argument.
 		 */
 		private function saveProjectAs_CLICK(e:Event):void
 		{
 			var fs:FileStream = null;
-			var file:File = File.desktopDirectory.resolvePath((_config.FilePath == null) ? _config.ProjectName + ".xml" : new File(_config.FilePath).name);
+			var file:File = File.desktopDirectory.resolvePath((_config.FilePath == null) ? _config.ProjectName + ".satchel" : new File(_config.FilePath).name);
 			file.addEventListener(Event.CANCEL, function(e:Event):void {} ); 
 			file.addEventListener(Event.SELECT, function(e:Event):void { 
 				var path:String = File(e.target).nativePath;
-				if (path.indexOf(".xml") != path.length - 4)
-					path += ".xml";
+				if (path.indexOf(".satchel") != path.length - ".satchel".length)
+					path += ".satchel";
 					
 				var tofile:File = new File(path);
 				_config.FilePath = tofile.nativePath;
 				fs = new FileStream();
 				fs.open(tofile, FileMode.WRITE);
-				fs.writeUTFBytes(_config.exportXML());
+				fs.writeUTFBytes(_config.export());
 				fs.close();
 				MenuController.mainMenu.println("Save complete. (" + _config.ModifiedDate.toUTCString() + ")"); 
 				m_fileChanged = false;
 				setTitle(Main.TITLE + " - " + Main.Config.ProjectName);
 			});
 			var bArr:ByteArray = new ByteArray();
-			bArr.writeUTFBytes(_config.exportXML());
+			bArr.writeUTFBytes(_config.export());
 			
 			file.browseForSave("Choose a Save Location");
+		}
+		private function about_CLICK(e:Event):void
+		{
+			var alertBox:HTMLLoader = new HTMLLoader();
+            alertBox.loadString("<html></html>");
+			alertBox.window.alert("SpriteSatchel Version " + SatchelConfig.VERSION + "\nAuthored by Greg McLeod");
 		}
 		
 		/**

@@ -17,15 +17,13 @@ package com.mcleodgaming.spritesatchel.core.collision
 		private var m_regPoint:Point;
 		private var m_scale:Point;
 		private var m_depth:int;
-		private var m_circular:Boolean;
 		private var m_customData:Object;
 		
-		public function HitBoxSprite(type:String, rectangle:Rectangle, circular:Boolean = false, customData:Object = null, regPoint:Point = null, scale:Point = null, rotation:Number = 0, transform:Matrix = null, depth:int = 0) 
+		public function HitBoxSprite(type:String, rectangle:Rectangle, customData:Object = null, regPoint:Point = null, scale:Point = null, rotation:Number = 0, transform:Matrix = null, depth:int = 0) 
 		{
 			m_name = null;
 			m_type = type;
 			m_rectangle = rectangle;
-			m_circular = circular;
 			m_customData = customData;
 			m_flippedRectangle = new Rectangle( -rectangle.x - rectangle.width, rectangle.y, rectangle.width, rectangle.height); //Flipped over X-axis
 			m_rotation = rotation;
@@ -115,14 +113,10 @@ package com.mcleodgaming.spritesatchel.core.collision
 		{
 			m_customData = value;
 		}
-		public function get Circular():Boolean
-		{
-			return m_circular;
-		}
 		
 		public function equals(hitBox:HitBoxSprite):Boolean
 		{
-			return (m_type == hitBox.Type && m_rectangle.equals(hitBox.BoundingBox) && m_circular == hitBox.Circular && m_regPoint.equals(hitBox.m_regPoint) && m_scale.equals(hitBox.m_scale) && m_rotation == hitBox.rotation && m_transform.a == hitBox.transform.a && m_transform.b == hitBox.transform.b && m_transform.c == hitBox.transform.c && m_transform.d == hitBox.transform.d && m_transform.tx == hitBox.transform.tx && m_transform.ty == hitBox.transform.ty && m_depth == hitBox.depth);
+			return (m_type == hitBox.Type && m_rectangle.equals(hitBox.BoundingBox) && m_regPoint.equals(hitBox.m_regPoint) && m_scale.equals(hitBox.m_scale) && m_rotation == hitBox.rotation && m_transform.a == hitBox.transform.a && m_transform.b == hitBox.transform.b && m_transform.c == hitBox.transform.c && m_transform.d == hitBox.transform.d && m_transform.tx == hitBox.transform.tx && m_transform.ty == hitBox.transform.ty && m_depth == hitBox.depth);
 		}
 		public function export(frame:int):String
 		{
@@ -134,7 +128,6 @@ package com.mcleodgaming.spritesatchel.core.collision
 			obj.reg = { x: m_regPoint.x, y: m_regPoint.y };
 			obj.scale = { x: scaleX, y: scaleY };
 			obj.depth = m_depth;
-			obj.circular = m_circular;
 			obj.rotation = m_rotation;
 			obj.customData = null;
 			obj.frame = frame;

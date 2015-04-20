@@ -96,20 +96,21 @@
 				}
 			}
 		}
-		public static function findXMLNodeByName(xml:XML, nodeName:String):XML
-		{
-			var xmlNodes:XMLList =  xml.children();
-			for each (var item:XML in xmlNodes)
-				if (item.name() == nodeName)
-					return item;
-			return null;
-		}
 		public static function toRelativePath(currentDirectory:String, targetDirectory:String):String
 		{
 			var index:int = targetDirectory.indexOf(currentDirectory);
 			if (currentDirectory && targetDirectory && targetDirectory.indexOf(currentDirectory) == 0)
 				targetDirectory = "." + File.separator + targetDirectory.substr(currentDirectory.length + File.separator.length);
 			return targetDirectory;
+		}
+		public static function toArray(vec:*):Array
+		{
+			var arr:Array = [];
+			for (var i:int = 0; i < vec.length; i++)
+			{
+				arr.push(vec[i]);
+			}
+			return arr;
 		}
 	}
 }

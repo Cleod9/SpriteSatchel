@@ -1,0 +1,17 @@
+{
+  "config": {
+    "pngExportPath": "./output",
+    "exportMode": "createjs",
+    "jsonExportPath": "./output"
+  },
+  "version": "0.5.9",
+  "timestamp": "Sun Apr 19 22:32:52 2015 UTC",
+  "name": "Untitled",
+  "sources": [
+    {
+      "file": "D:\\Flash\\SpriteSatchel\\examples\\ninja\\ninja.swf",
+      "exclude": [],
+      "export": true
+    }
+  ]
+}

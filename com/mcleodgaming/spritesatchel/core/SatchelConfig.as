@@ -1,11 +1,12 @@
 package com.mcleodgaming.spritesatchel.core 
 {
 	import com.adobe.utils.StringUtil;
+	import com.mcleodgaming.spritesatchel.util.Utils;
 	import flash.display.MovieClip;
 	import flash.filesystem.File;
 	public class SatchelConfig 
 	{
-		public static const VERSION:String = "0.5.8";
+		public static const VERSION:String = "0.5.9";
 		
 		private var _date:Date;
 		private var _filePath:String;
@@ -93,40 +94,33 @@ package com.mcleodgaming.spritesatchel.core
 			_sources = null;
 			_sources = new Vector.<SatchelSource>();
 		}
-		public function exportXML():XML
+		public function export():String
 		{
 			_date = new Date();
 			
-			var spritesatchel:XML = new XML("<spritesatchel />");
-			spritesatchel.@version = SatchelConfig.VERSION;
+			var spritesatchel:Object = { };
+			spritesatchel.version = SatchelConfig.VERSION;
 			
-			var project:XML = new XML("<project />");
-			project.@name = _projectName;
-			project.@timestamp = _date.toUTCString();
+			spritesatchel.name = _projectName;
+			spritesatchel.timestamp = _date.toUTCString();
 			
-			var config:XML = new XML("<config />");
-			config.appendChild(new XML("<exportMode>" + _exportMode + "</exportMode>"));
+			spritesatchel.config = { };
+			spritesatchel.config.exportMode = _exportMode;
+			spritesatchel.config.jsonExportPath = _jsonExportPath;
+			spritesatchel.config.pngExportPath = _pngExportPath;
 			
-			config.appendChild(new XML("<jsonExportPath>" + _jsonExportPath + "</jsonExportPath>"));
-			config.appendChild(new XML("<pngExportPath>" + _pngExportPath + "</pngExportPath>"));
+			spritesatchel.sources = [];
 			
-			var sources:XML = new XML("<sources />");
 			for (var i:int = 0; i < _sources.length; i++)
 			{
-				var file:XML = new XML("<file />");
-				if(!_sources[i].Export)
-					file.@export = "false";
-				if (_sources[i].ExcludeList.length > 0)
-					file.@exclude = _sources[i].ExcludeList.join(",");
-				file.appendChild(new File(_sources[i].Path).nativePath);
-				sources.appendChild(file);
+				spritesatchel.sources.push({
+					file: new File(_sources[i].Path).nativePath,
+					export: _sources[i].Export,
+					exclude: Utils.toArray(_sources[i].ExcludeList)
+				});
 			}
 			
-			spritesatchel.appendChild(project);
-			project.appendChild(config);
-			project.appendChild(sources);
-			
-			return spritesatchel;
+			return JSON.stringify(spritesatchel, null, 2);
 		}
 	}
 

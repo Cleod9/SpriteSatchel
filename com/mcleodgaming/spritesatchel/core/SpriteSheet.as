@@ -110,6 +110,7 @@ package com.mcleodgaming.spritesatchel.core
 			var origScaleX:Number = 1;
 			var origScaleY:Number = 1;
 			var prevSprite:SpriteObject = null;
+			var tmpMC:MovieClip;
 			
 			//This will track the scale of the MC
 			//The graphics are captured in origScaleX/origScaleY size and we treat this as scaleX/scaleY of 1
@@ -139,9 +140,14 @@ package com.mcleodgaming.spritesatchel.core
 				{
 					for (var hindex:int = 0; hindex < mc.numChildren; hindex++)
 					{
-						if (mc.getChildAt(hindex) is MovieClip && MovieClip(mc.getChildAt(hindex)).id && !MovieClip(mc.getChildAt(hindex)).forceVisible)
+						if (mc.getChildAt(hindex) is MovieClip)
 						{
-							mc.getChildAt(hindex).visible = false;
+							tmpMC = MovieClip(mc.getChildAt(hindex));
+							
+							if (((tmpMC.id) || (tmpMC.name && !tmpMC.name.match(/^instance/g))) && !MovieClip(mc.getChildAt(hindex)).forceVisible)
+							{
+								mc.getChildAt(hindex).visible = false;
+							}
 						}
 					}
 					//Ready to capture Bitmap of this frame

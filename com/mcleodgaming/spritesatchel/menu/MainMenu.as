@@ -98,19 +98,19 @@ package com.mcleodgaming.spritesatchel.menu
 			_jsonExportPathText = new Text(_container, 20, 270, Main.Config.JSONExportPath);
 			_jsonExportPathText.enabled = false;
 			_jsonExportPathText.textField.multiline = false;
-			_jsonExportPathText.width = 150;
+			_jsonExportPathText.width = 250;
 			_jsonExportPathText.height = 20;
 			
-			_jsonExportPathButton = new PushButton(_container, 175, 270, "JSON Output Path");
+			_jsonExportPathButton = new PushButton(_container, 275, 270, "JSON Output Path");
 			_jsonExportPathButton.width = 100;
 					
 			_pngExportPathText = new Text(_container, 20, 300, Main.Config.PNGExportPath);
 			_pngExportPathText.enabled = false;
 			_pngExportPathText.textField.multiline = false;
-			_pngExportPathText.width = 150;
+			_pngExportPathText.width = 250;
 			_pngExportPathText.height = 20;
 			
-			_pngExportPathButton = new PushButton(_container, 175, 300, "PNG Output Path");
+			_pngExportPathButton = new PushButton(_container, 275, 300, "PNG Output Path");
 			_pngExportPathButton.width = 100;
 			
 			_manifestLabel = new Label(_container, 680, 10, "Manifiest:");
@@ -212,51 +212,51 @@ package com.mcleodgaming.spritesatchel.menu
 			_outputText.scrollV = _outputText.bottomScrollV;
 			Main.Root.stage.invalidate();
 		}
-		public function loadProjectXML(xmlData:XML):void
+		public function loadProjectJSON(json:String):void
 		{
 			var i:int = 0;
-			var node:XML = null;
-			var project:XML = null;
-			var config:XML = null;
-			var sources:XML = null;
-			resetAll();
-			if (xmlData.name() == "spritesatchel")
+			var data:Object;
+			try
 			{
-				if ((project = Utils.findXMLNodeByName(xmlData, "project")) != null)
+				data = JSON.parse(json);
+			} catch (e:*) {
+				
+			}
+			if (data)
+			{
+				resetAll();
+				addClickBlocker();
+				_spriteSourceDropdown.removeAll();
+				_spriteSourceDropdown.defaultLabel = _spriteSourceDropdown.defaultLabel;
+				removeSourceClip();
+				setOptionsEnabled(false);
+				if (data.name)
+					Main.Config.ProjectName = data.name;
+				if (data.config)
 				{
-					addClickBlocker();
-					_spriteSourceDropdown.removeAll();
-					_spriteSourceDropdown.defaultLabel = _spriteSourceDropdown.defaultLabel;
-					removeSourceClip();
-					setOptionsEnabled(false);
-					if (project.@name)
-						Main.Config.ProjectName = project.@name;
-					if ((config = Utils.findXMLNodeByName(project, "config")) != null)
-					{
-						if (config.child("exportMode"))
-							Main.Config.ExportMode = config.child("exportMode");
-						if (config.child("jsonExportPath"))
-							Main.Config.JSONExportPath = config.child("jsonExportPath");
-						if (config.child("pngExportPath"))
-							Main.Config.PNGExportPath = config.child("pngExportPath");
-					}
-					if ((sources = Utils.findXMLNodeByName(project, "sources")) != null)
-					{
-						for each(node in sources.children())
-						{
-							importSWF(new File(node), { export: (node.@export == "false") ? false : true, exclude: (node.hasOwnProperty("@exclude") && StringUtil.trim(node.@exclude) != "") ? node.@exclude : null });
-						}
-					}
-					//Update options
-					_jsonExportPathText.text = Main.Config.JSONExportPath;
-					_pngExportPathText.text = Main.Config.PNGExportPath;
-					
-					println("Successfully opened project \"" + Main.Config.ProjectName  + "\".");
-					removeClickBlocker();
-				} else
-				{
-					println("Error, missing Project node.");
+					if (data.config.exportMode)
+						Main.Config.ExportMode = data.config.exportMode;
+					if (data.config.jsonExportPath)
+						Main.Config.JSONExportPath = data.config.jsonExportPath;
+					if (data.config.pngExportPath)
+						Main.Config.PNGExportPath = data.config.pngExportPath;
 				}
+				if (data.sources)
+				{
+					for ( i = 0; i < data.sources.length; i++ )
+					{
+						importSWF(new File(data.sources[i].file), { 
+							export: (data.sources[i].export !== undefined) ? data.sources[i].export : true,
+							exclude: (data.sources[i].exclude !== undefined) ? data.sources[i].exclude : []
+						});
+					}
+				}
+				//Update options
+				_jsonExportPathText.text = Main.Config.JSONExportPath;
+				_pngExportPathText.text = Main.Config.PNGExportPath;
+				
+				println("Successfully opened project \"" + Main.Config.ProjectName  + "\".");
+				removeClickBlocker();
 			} else
 			{
 				println("Error, invalid Sprite Satchel Project file");
@@ -303,8 +303,8 @@ package com.mcleodgaming.spritesatchel.menu
 					}
 				} else if(settings.exclude)
 				{
-					//Grab data passed in from XML
-					var excludeList:Array = settings.exclude.split(",");
+					//Grab data passed in from save data
+					var excludeList:Array = settings.exclude;
 					for (i = 0; i < source.SourceClip.manifest.length; i++)
 					{
 						if (settings.exclude.indexOf(source.SourceClip.manifest[i].linkage) >= 0)
@@ -608,12 +608,11 @@ package com.mcleodgaming.spritesatchel.menu
 				if (!Main.Config.FilePath)
 				{
 					Main.Config.JSONExportPath = file.nativePath;
-					_jsonExportPathText.text = Main.Config.JSONExportPath;
 				} else
 				{
 					Main.Config.JSONExportPath = Utils.toRelativePath(Main.Config.FilePath.substr(0, Main.Config.FilePath.lastIndexOf(File.separator)), file.nativePath);
-					_jsonExportPathText.text = Main.Config.JSONExportPath;
 				}
+				_jsonExportPathText.text = Main.Config.JSONExportPath;
 				EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.FILE_CHANGED, "Project has been modified."));
 			});
 			openDialog.addEventListener(Event.CANCEL, function(e:Event):void { } );
@@ -627,12 +626,11 @@ package com.mcleodgaming.spritesatchel.menu
 				if (!Main.Config.FilePath)
 				{
 					Main.Config.PNGExportPath = file.nativePath;
-					_pngExportPathText.text = Main.Config.PNGExportPath;
 				} else
 				{
 					Main.Config.PNGExportPath = Utils.toRelativePath(Main.Config.FilePath.substr(0, Main.Config.FilePath.lastIndexOf(File.separator)), file.nativePath);
-					_pngExportPathText.text = Main.Config.PNGExportPath;
 				}
+				_pngExportPathText.text = Main.Config.PNGExportPath;
 				EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.FILE_CHANGED, "Project has been modified."));
 			});
 			openDialog.addEventListener(Event.CANCEL, function(e:Event):void { } );
