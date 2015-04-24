@@ -2,7 +2,7 @@
 
 ----------
 
-SpriteSatchel is a tool for converting SWF animations into SpriteSheets for [CreateJS](http://createjs.com/Home). The tool is designed to accomplish the same thing as CreateJS's [Zoë](https://github.com/CreateJS/Zoe), but it's written from the ground up in order to address some of Zoë's problems. I also added a number of additional features that I think Zoë should have had to start. The most notable feature is the ability to export SpriteSheets from MovieClips within the SWF's library instead of using the root timeline. Additional details are listed below.
+SpriteSatchel is a tool for converting SWF animations into SpriteSheets for [CreateJS](http://createjs.com/Home). The tool is designed as an alternative to [Zoë](https://github.com/CreateJS/Zoe), but provides a slightly different workflow to support storing many spritesheets within one FLA. Additional details are listed below.
 
 SpriteSatchel can work on any SWF content Flash 9.0 and above, and it requires [Adobe AIR](https://get.adobe.com/air/) to install the software. Exported SpriteSheets are confirmed to work with the EaselJS package version 0.7.* and above, but is likely to work with earlier versions as well assuming the JSON data format hasn't changed. 
 
@@ -13,29 +13,21 @@ http://www.mcleodgaming.com/downloads/SpriteSatchel.0.5.9.air
 ## Features ##
 
 - Converts MovieClip assets from a SWF's library into spritesheet PNGs and JSON files compatible with CreateJS
-- **Capable of reading hitboxes** drawn over animations and write them out as JSON (great for anchor points!)
+- Supports storing **hitbox data** drawn over animations and writes them out as JSON (great for anchor points!)
 - Save your project's settings to a file so that you can quickly re-export the next time you open
 - Add multiple SWF files as sources
 - Specify individual sheets to exclude from the export
 
 ### Why SpriteSatchel? ###
 
-Zoë (the alternative to SpriteSatchel) claims on its Github page that it's  "best practice to have all your animations on the root timeline". Sure this makes sense for Zoë because that's the only option, but that's one of its biggest limitations since you can only create one spritesheet per SWF. To me this defeats the purpose of Flash as a tool for being able to store many collections of animations in one FLA.
-
-SpriteSatchel takes a different approach by allowing the Flash Library to act as a "home" for all of your spritesheets. To elaborate, in Zoë you create all of your animations on the root timeline (this can be a lot of frames!). But in SpriteSatchel:
+I created this tool mainly so that I could use the same workflow for HTML5 canvas animations as I would if I were working on a Flash game. I like to be able to bundle related animations together in one MovieClip, and I wasn't able to do this easily with other tools. To summarize how this workflow is set up:
 
 - A single MovieClip represents a spritesheet, and consists of one or more animations. 
 - A spritesheet is a collection of child animations, each animation living in its own MovieClip
-- Frame labels on the spritesheet MovieClip determine the animation names
-- Registration points are determined by an animation's "parent" MovieClip (no need to place it manually!)
-- Execute the included `create_manifiest.jsfl` script while on the root timeline of your FLA, and it will generate manifest code to tell SpriteSatchel what resources are available by looking for all clips exported for ActionScript in your library.
+- Frame labels on the parent MovieClip determine the animation names
+- Registration points are determined by the origin point within the parent MovieClip (no need to place it manually!)
+- Execute the included `create_manifest.jsfl` script while on the root timeline of your FLA, and it will generate manifest code for spritesheet MovieClips that are exported for ActionScript in your library.
 - Export the SWF and open with SpriteSatchel, and watch the magic at work!
-
-So in a way, SpriteSatchel is able to do what Zoë does but to multiple MovieClips from an FLA. It also has the added benefit of organizing your sprites in such a way that supports keeping animations separate from each other.
-
-Another difference from Zoë is that SpriteSatchel can handle transparencies and filter effects a lot better. I've had times where Zoë would cut off parts of my animations that had subtle transparency effects, which was one of the major factors that prompted me to create this new tool.
-
-
 
 ## How to Export a Spritesheet ##
 
