@@ -440,7 +440,7 @@ package com.mcleodgaming.spritesatchel.core
 					}
 				}
 				
-				if (!combinedBoxes.length)
+				if (combinedBoxes.length)
 				{
 					jsonData += ",\"hitboxes\":[";
 					jsonData += combinedBoxes.join(",") + "]"
