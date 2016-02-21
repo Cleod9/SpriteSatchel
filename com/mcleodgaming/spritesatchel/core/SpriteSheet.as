@@ -426,7 +426,6 @@ package com.mcleodgaming.spritesatchel.core
 				var hitboxAnimation:HitBoxAnimation = _animations[animationNum].hitboxes || null;
 				var combinedBoxes:Array = new Array();
 				var combinedFrames:Array = new Array();
-				jsonData += ",\"hitboxes\":[";
 				if (hitboxAnimation)
 				{
 					for (var type:* in hitboxAnimation.HitFramesMap)
@@ -440,7 +439,12 @@ package com.mcleodgaming.spritesatchel.core
 						}
 					}
 				}
-				jsonData += combinedBoxes.join(",") + "]"
+				
+				if (!combinedBoxes.length)
+				{
+					jsonData += ",\"hitboxes\":[";
+					jsonData += combinedBoxes.join(",") + "]"
+				}
 				
 				jsonData += "}, ";
 			}
