@@ -6,9 +6,9 @@ SpriteSatchel is a tool for converting SWF animations into SpriteSheets for [Cre
 
 SpriteSatchel can work on any SWF content Flash 9.0 and above, and it requires [Adobe AIR](https://get.adobe.com/air/) to install the software. Exported SpriteSheets are confirmed to work with the EaselJS package version 0.7.* and above, but is likely to work with earlier versions as well assuming the JSON data format hasn't changed. 
 
-Download version 0.5.9 here:
+Download version 0.5.10 here:
 
-http://www.mcleodgaming.com/downloads/SpriteSatchel.0.5.9.air
+http://www.mcleodgaming.com/downloads/SpriteSatchel.0.5.10.air
 
 ## Features ##
 
@@ -125,7 +125,7 @@ Below is a description of the fields for a single hitbox Object that you can def
 
 `id` - (String) Represents the unique name for this hit box. Generally you would name a hitbox with numbers appended to some generic name if you have more than one on the same frame (e.g. `hitbox0`, `hitbox1`, etc.). You'd need to be able to enumerate through these values if hitboxes ever needed ordered priority. Otherwise you can use the same name across all of your frames. **You can alternatively provide an instance name** to the hitbox MovieClip to be used as the `id`, and as long as the MovieClip also contains a `type` property SpriteSatchel will detect it as a hitbox. Setting this value is **required** except when using instance names.
 
-`type` - (String) Represents a "group" name for this hitbox. Useful when you want to differentiate hitboxes of various types (e.g. "handbox", "footbox", etc.) Setting this value is **required**.
+`type` - (String) Represents a "group" name for this hitbox. Useful when you want to differentiate hitboxes of various types (e.g. "handbox", "footbox", etc.) Setting this value is **optional** - if you decide not to include a type, the program will default to the `id` string with any numerical suffix removed (e.g. "hitbox0"'s type would be just "hitbox").
 
 `customData` - (Object) You can place any data you want inside this object to be written to the JSON file. Setting this value is **optional**.
 
