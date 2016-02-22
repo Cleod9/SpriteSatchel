@@ -82,11 +82,11 @@ package com.mcleodgaming.spritesatchel.core.collision
 						child = MovieClip(mc.getChildAt(j));
 						name = child.name;
 						name = child.name;
-						id = (child.id) ? child.id : (name && !name.match(/^instance/g)) ? name : null;
+						id = (child.id) ? child.id : (name && !name.match(/^instance/)) ? name : null;
 						if (id)
 						{
 							//An attack box exists with this name, let's add it to the animation
-							type = child.type || id.match(/^[a-zA-Z_]+/g)[0];
+							type = child.type || (id.match(/^[a-zA-Z_]+/g) ? id.match(/^[a-zA-Z_]+/g)[0] : null);
 							
 							//Require a type to be defined
 							if (type)
