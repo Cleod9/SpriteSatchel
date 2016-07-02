@@ -47,7 +47,7 @@
 			if (source.width == 0 || source.height == 0)
 				return rect;
 			 
-			var data:BitmapData = new BitmapData(source.width, source.height, true, SpriteSheet.TRANS_COLOR);
+			var data:BitmapData = new BitmapData(Math.max(1, source.width), Math.max(1, source.height), true, SpriteSheet.TRANS_COLOR);
 			data.draw(source, matrix);
 			var bounds : Rectangle = data.getColorBoundsRect(0xFFFFFFFF, SpriteSheet.TRANS_COLOR, false);
 			data.dispose();
