@@ -6,9 +6,9 @@ SpriteSatchel is a tool for converting SWF animations into SpriteSheets for [Cre
 
 SpriteSatchel can work on any SWF content Flash 9.0 and above, and it requires [Adobe AIR](https://get.adobe.com/air/) to install the software. Exported SpriteSheets are confirmed to work with the EaselJS package version 0.7.* and above, but is likely to work with earlier versions as well assuming the JSON data format hasn't changed. 
 
-Download version 0.5.13 here:
+Download version 0.5.14 here:
 
-http://www.mcleodgaming.com/downloads/SpriteSatchel.0.5.13.air
+http://www.mcleodgaming.com/downloads/SpriteSatchel.0.5.14.air
 
 ## Features ##
 

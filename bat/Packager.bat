@@ -9,7 +9,7 @@ set OUTPUT=%AIR_PATH%\%AIR_NAME%%AIR_TARGET%.air
 echo.
 echo Packaging %AIR_NAME%%AIR_TARGET%.air using certificate %CERT_FILE%...
 call adt -package %CERT_TSA% %OPTIONS% %SIGNING_OPTIONS% %OUTPUT% %APP_XML% %FILE_OR_DIR%
-:: call adt %SIGNING_OPTIONS_MIGRATE% %OUTPUT% %OUTPUT% 
+call adt %SIGNING_OPTIONS_MIGRATE% %OUTPUT% %OUTPUT% 
 if errorlevel 1 goto failed
 goto end
 

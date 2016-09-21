@@ -6,7 +6,7 @@ package com.mcleodgaming.spritesatchel.core
 	import flash.filesystem.File;
 	public class SatchelConfig 
 	{
-		public static const VERSION:String = "0.5.13";
+		public static const VERSION:String = "0.5.14";
 		
 		private var _date:Date;
 		private var _filePath:String;
