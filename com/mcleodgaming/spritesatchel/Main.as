@@ -51,11 +51,14 @@ package com.mcleodgaming.spritesatchel
 		private var m_menu:NativeMenu;
 		
 		private var m_fileMenu:NativeMenu;
-		private var m_fileMenuItems:Vector.<NativeMenuItem>;
+		
+		private var m_settingsMenu:NativeMenu;
+		
+		private var m_dimensionsMenu:NativeMenu;
 		
 		private var m_helpMenu:NativeMenu;
-		private var m_helpMenuItems:Vector.<NativeMenuItem>;
 		
+		// File
 		private var m_newProject:NativeMenuItem;
 		private var m_openProject:NativeMenuItem;
 		private var m_saveProject:NativeMenuItem;
@@ -64,6 +67,16 @@ package com.mcleodgaming.spritesatchel
 		private var m_publish:NativeMenuItem;
 		private var m_exit:NativeMenuItem;
 		
+		// Settings
+		private var m_maxWidth2048:NativeMenuItem;
+		private var m_maxWidth4096:NativeMenuItem;
+		private var m_maxWidth8192:NativeMenuItem;
+		
+		private var m_maxHeight2048:NativeMenuItem;
+		private var m_maxHeight4096:NativeMenuItem;
+		private var m_maxHeight8192:NativeMenuItem;
+		
+		// Help
 		private var m_about:NativeMenuItem;
 		
 		public function Main():void 
@@ -84,9 +97,11 @@ package com.mcleodgaming.spritesatchel
 			//Create menus
 			m_menu = new NativeMenu();
 			m_fileMenu = new NativeMenu();
+			m_settingsMenu = new NativeMenu();
+			m_dimensionsMenu = new NativeMenu();
 			m_helpMenu = new NativeMenu();
 			
-			//Create menu items
+			//Create File menu items
 			m_newProject = new NativeMenuItem("New Project");
 			m_openProject = new NativeMenuItem("Open Project");
 			m_saveProject = new NativeMenuItem("Save Project");
@@ -94,6 +109,18 @@ package com.mcleodgaming.spritesatchel
 			m_importSWF = new NativeMenuItem("Import SWF");
 			m_publish = new NativeMenuItem("Publish");
 			m_exit = new NativeMenuItem("Exit");
+			
+			//Create Settings menu items
+			m_maxWidth2048 = new NativeMenuItem("2048px W");
+			m_maxWidth4096 = new NativeMenuItem("4096px W");
+			m_maxWidth8192 = new NativeMenuItem("8192px W");
+			
+			//Create Settings menu items
+			m_maxHeight2048 = new NativeMenuItem("2048px H");
+			m_maxHeight4096 = new NativeMenuItem("4096px H");
+			m_maxHeight8192 = new NativeMenuItem("8192px H");
+			
+			// Create Help Menu Items
 			m_about = new NativeMenuItem("About");
 			
 			//Keyboard shortcuts
@@ -115,10 +142,23 @@ package com.mcleodgaming.spritesatchel
 			m_fileMenu.addItem(m_publish);
 			m_fileMenu.addItem(new NativeMenuItem("", true));
 			m_fileMenu.addItem(m_exit);
+			
+			m_settingsMenu.addSubmenu(m_dimensionsMenu, "Max Dimensons");
+			
+			m_dimensionsMenu.addItem(m_maxWidth2048);
+			m_dimensionsMenu.addItem(m_maxWidth4096);
+			m_dimensionsMenu.addItem(m_maxWidth8192);
+			m_dimensionsMenu.addItem(new NativeMenuItem("", true));
+			
+			m_dimensionsMenu.addItem(m_maxHeight2048);
+			m_dimensionsMenu.addItem(m_maxHeight4096);
+			m_dimensionsMenu.addItem(m_maxHeight8192);
+			
 			m_helpMenu.addItem(m_about);
 			
 			//Add menu to master menu
 			m_menu.addSubmenu(m_fileMenu, "File");
+			m_menu.addSubmenu(m_settingsMenu, "Settings");
 			m_menu.addSubmenu(m_helpMenu, "Help");
 			
 			//Make menu
@@ -141,6 +181,16 @@ package com.mcleodgaming.spritesatchel
 			m_importSWF.addEventListener(Event.SELECT, importSWF_CLICK);
 			m_publish.addEventListener(Event.SELECT, publish_CLICK);
 			m_exit.addEventListener(Event.SELECT, exit_CLICK);
+			
+			
+			m_maxWidth2048.addEventListener(Event.SELECT, width_2048_CLICK);
+			m_maxWidth4096.addEventListener(Event.SELECT, width_4096_CLICK);
+			m_maxWidth8192.addEventListener(Event.SELECT, width_8192_CLICK);
+			
+			m_maxHeight2048.addEventListener(Event.SELECT, height_2048_CLICK);
+			m_maxHeight4096.addEventListener(Event.SELECT, height_4096_CLICK);
+			m_maxHeight8192.addEventListener(Event.SELECT, height_8192_CLICK);
+			
 			m_about.addEventListener(Event.SELECT, about_CLICK);
 			
 			//Fix title
@@ -148,6 +198,10 @@ package com.mcleodgaming.spritesatchel
 			
 			MenuController.showMainMenu();
 			EventManager.dispatcher.addEventListener(SpriteSatchelEvent.FILE_CHANGED, handleFileChanged);
+			
+			// Default dimensions
+			width_4096_CLICK(null);
+			height_2048_CLICK(null);
 		}
 		
 		public static function get Config():SatchelConfig
@@ -216,6 +270,26 @@ package com.mcleodgaming.spritesatchel
 				var input:String = fs.readUTFBytes(fs.bytesAvailable);
 				fs.close();
 				MenuController.mainMenu.loadProjectJSON(input);
+				if (_config.MaxWidth === 2048)
+				{
+					width_2048_CLICK(null);
+				} else if (_config.MaxWidth === 4096)
+				{
+					width_4096_CLICK(null);
+				} else if (_config.MaxWidth === 8192)
+				{
+					width_8192_CLICK(null);
+				}
+				if (_config.MaxHeight === 2048)
+				{
+					height_2048_CLICK(null);
+				} else if (_config.MaxHeight === 4096)
+				{
+					height_4096_CLICK(null);
+				} else if (_config.MaxHeight === 8192)
+				{
+					height_8192_CLICK(null);
+				}
 				Main.setTitle(Main.TITLE + " - " + Main.Config.ProjectName);
 			});
 			openDialog.addEventListener(Event.CANCEL, function():void { MenuController.mainMenu.println("Action cancelled"); } );
@@ -316,6 +390,50 @@ package com.mcleodgaming.spritesatchel
 		{
 			m_fileChanged = true;
 			setTitle("*" + Main.TITLE + " - " + Main.Config.ProjectName);
+		}
+		
+		private function width_2048_CLICK(e:Event):void
+		{
+			m_maxWidth2048.checked = true;
+			m_maxWidth4096.checked = false;
+			m_maxWidth8192.checked = false;
+			_config.MaxWidth = 2048;
+		}
+		private function width_4096_CLICK(e:Event):void
+		{
+			m_maxWidth2048.checked = false;
+			m_maxWidth4096.checked = true;
+			m_maxWidth8192.checked = false;
+			_config.MaxWidth = 4096;
+		}
+		private function width_8192_CLICK(e:Event):void
+		{
+			m_maxWidth2048.checked = false;
+			m_maxWidth4096.checked = false;
+			m_maxWidth8192.checked = true;
+			_config.MaxWidth = 8192;
+		}
+		
+		private function height_2048_CLICK(e:Event):void
+		{
+			m_maxHeight2048.checked = true;
+			m_maxHeight4096.checked = false;
+			m_maxHeight8192.checked = false;
+			_config.MaxHeight = 2048;
+		}
+		private function height_4096_CLICK(e:Event):void
+		{
+			m_maxHeight2048.checked = false;
+			m_maxHeight4096.checked = true;
+			m_maxHeight8192.checked = false;
+			_config.MaxHeight = 4096;
+		}
+		private function height_8192_CLICK(e:Event):void
+		{
+			m_maxHeight2048.checked = false;
+			m_maxHeight4096.checked = false;
+			m_maxHeight8192.checked = true;
+			_config.MaxHeight = 8192;
 		}
 	}
 	

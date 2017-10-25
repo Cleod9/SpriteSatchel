@@ -7,17 +7,19 @@ package com.mcleodgaming.spritesatchel.core
 		public var rect:Rectangle;
 		public var registration:Point;
 		public var imageIndex:int;
+		public var sheetIndex:int;
 		
-		public function SpriteObject(imageIndex:int, rect:Rectangle, registration:Point) 
+		public function SpriteObject(imageIndex:int, rect:Rectangle, registration:Point, sheetIndex:int) 
 		{
 			this.rect = rect;
 			this.registration = registration;
 			this.imageIndex = imageIndex;
+			this.sheetIndex = sheetIndex;
 		}
 		
 		public function clone():SpriteObject
 		{
-			return new SpriteObject(imageIndex, rect.clone(), registration.clone());
+			return new SpriteObject(imageIndex, rect.clone(), registration.clone(), sheetIndex);
 		}
 	}
 

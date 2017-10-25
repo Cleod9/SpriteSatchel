@@ -6,7 +6,7 @@ package com.mcleodgaming.spritesatchel.core
 	import flash.filesystem.File;
 	public class SatchelConfig 
 	{
-		public static const VERSION:String = "0.5.14";
+		public static const VERSION:String = "0.6.0";
 		
 		private var _date:Date;
 		private var _filePath:String;
@@ -15,6 +15,8 @@ package com.mcleodgaming.spritesatchel.core
 		private var _exportMode:String;
 		private var _jsonExportPath:String;
 		private var _pngExportPath:String;
+		private var _maxWidth:int;
+		private var _maxHeight:int;
 		private var _sources:Vector.<SatchelSource>
 		
 		public function SatchelConfig():void
@@ -26,6 +28,8 @@ package com.mcleodgaming.spritesatchel.core
 			_exportMode = "createjs";
 			_jsonExportPath = File.desktopDirectory.nativePath + File.separator + ["assets", "json"].join(File.separator);
 			_pngExportPath = File.desktopDirectory.nativePath + File.separator + ["assets", "images"].join(File.separator);
+			_maxWidth = 2048;
+			_maxHeight = 2048;
 			_sources = new Vector.<SatchelSource>();
 		}
 		
@@ -77,6 +81,22 @@ package com.mcleodgaming.spritesatchel.core
 		{
 			_pngExportPath = StringUtil.trim(value);
 		}
+		public function get MaxWidth():int
+		{
+			return _maxWidth;
+		}
+		public function set MaxWidth(value:int):void
+		{
+			_maxWidth = value;
+		}
+		public function get MaxHeight():int
+		{
+			return _maxHeight;
+		}
+		public function set MaxHeight(value:int):void
+		{
+			_maxHeight = value;
+		}
 		public function get Sources():Vector.<SatchelSource>
 		{
 			return _sources;
@@ -91,6 +111,8 @@ package com.mcleodgaming.spritesatchel.core
 			_exportMode = "createjs";
 			_jsonExportPath = "";
 			_pngExportPath = "";
+			_maxWidth = 2048;
+			_maxHeight = 2048;
 			_sources = null;
 			_sources = new Vector.<SatchelSource>();
 		}
@@ -108,6 +130,8 @@ package com.mcleodgaming.spritesatchel.core
 			spritesatchel.config.exportMode = _exportMode;
 			spritesatchel.config.jsonExportPath = _jsonExportPath;
 			spritesatchel.config.pngExportPath = _pngExportPath;
+			spritesatchel.config.maxWidth = _maxWidth;
+			spritesatchel.config.maxHeight = _maxHeight;
 			
 			spritesatchel.sources = [];
 			

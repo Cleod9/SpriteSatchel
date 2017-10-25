@@ -31,31 +31,20 @@ package com.mcleodgaming.spritesatchel.core
 	public class SpriteSheet
 	{
 		public static const TRANS_COLOR:uint = 0x00113366;
-		public static const HEADER_SIZE:int = 80;
-		public static const MAX_DIMENSIONS:int = 4096;
 		
 		protected var _name:String;
 		protected var _frames:int;
 		protected var _padding:int;
-		protected var _spritesheet:BitmapData
+		protected var _spriteBitmaps:Vector.<SpriteBitmap>;
 		protected var _animations:Vector.<Animation>;
-		
-		protected var _currentPoint:Point;
-		protected var _currentMaxHeight:int;
-		protected var _previousWidth:int;
-		protected var _rowStart:Boolean;
 		
 		public function SpriteSheet(name:String) 
 		{
 			_name = name;
 			_frames = 0;
 			_padding = 0;
-			_spritesheet = null;
+			_spriteBitmaps = new Vector.<SpriteBitmap>();
 			_animations = new Vector.<Animation>();
-			_currentPoint = new Point();
-			_currentMaxHeight = 0;
-			_previousWidth = 0;
-			_rowStart = true; //For the first MC of any row, we assume we don't need to check for space in the spritesheet
 		}	
 		public function get Name():String
 		{
@@ -64,13 +53,12 @@ package com.mcleodgaming.spritesatchel.core
 		public function importMovieClip(mc:MovieClip, forceXScale:Number = 1, forceYScale:Number = 1):void
 		{
 			var timer:Timer = new Timer(20, 1);
-			_currentPoint = new Point();
-			_currentMaxHeight = 0;
-			_previousWidth = 0;
-			_rowStart = true;
-			if (_spritesheet)
-				_spritesheet.dispose();
-			_spritesheet = new BitmapData(128, 128, true, SpriteSheet.TRANS_COLOR);
+			while (_spriteBitmaps.length)
+			{
+				_spriteBitmaps[0].dispose();
+				_spriteBitmaps.splice(0, 1);
+			}
+			_spriteBitmaps.push(new SpriteBitmap());
 			
 			var i:int = 0;
 			timer.addEventListener(TimerEvent.TIMER_COMPLETE, function(e:TimerEvent):void { 
@@ -99,18 +87,21 @@ package com.mcleodgaming.spritesatchel.core
 			});
 			timer.start();
 		}
-		public function importAnimation(name:String, mc:MovieClip, forceXScale:Number = 1, forceYScale:Number = 1):void
+		public function importAnimation(name:String, mc:MovieClip, forceXScale:Number = 1, forceYScale:Number = 1, startingFrame:int = 1, targetSpriteBitmap:SpriteBitmap = null):void
 		{
 			var animation:Animation = new Animation(name); 
 			_animations.push(animation);
 			
-			var frameNum:int = 1;
+			var frameNum:int = startingFrame;
 			var scaleX:Number = 1;
 			var scaleY:Number = 1;
 			var origScaleX:Number = 1;
 			var origScaleY:Number = 1;
 			var prevSprite:SpriteObject = null;
 			var tmpMC:MovieClip;
+			var k:int;
+			var targetSheet:SpriteBitmap = targetSpriteBitmap || _spriteBitmaps[0];
+			var targetSheetIndex:int = _spriteBitmaps.indexOf(targetSheet);
 			
 			//This will track the scale of the MC
 			//The graphics are captured in origScaleX/origScaleY size and we treat this as scaleX/scaleY of 1
@@ -122,8 +113,8 @@ package com.mcleodgaming.spritesatchel.core
 			animation.hitboxes = HitBoxAnimation.createHitBoxAnimation(_name + "_" + name, mc, mc.parent, null);
 			
 			//For each frame in the movie clip we are importing
-			mc.gotoAndStop(1);
-			for (var i:int = 1; i <= mc.totalFrames; i++, frameNum++)
+			mc.gotoAndStop(frameNum);
+			for (var i:int = frameNum; i <= mc.totalFrames; i++, frameNum++)
 			{
 				//Force MC to gotoAndStop() on next frame
 				if(mc.currentFrame + 1 == i)
@@ -202,29 +193,35 @@ package com.mcleodgaming.spritesatchel.core
 					var skipSheet:Boolean = false;
 					var upcomingBMPDat:BitmapData = new BitmapData(Math.ceil(boundsRect.width * scaleX), Math.ceil(boundsRect.height * scaleY), true, SpriteSheet.TRANS_COLOR);
 					upcomingBMPDat.draw(mc, offset, mc.transform.colorTransform, null, null, true);
-					for (var j:int = 0; j < _frames && !skipSheet; j++)
+					
+					// Note: If targetSpriteBitmap was defined we already checked for dupes
+					for (k = 0; k < _spriteBitmaps.length && !skipSheet && !targetSpriteBitmap; k++)
 					{
-						var currentSprite:SpriteObject = findByImageIndex(j);
-						//Fail if sprite doesn't exist, the registration point doesn't match, or the rectangle is not the same height/width
-						if (!currentSprite || !(currentFrameBitmap.rect.width === currentSprite.rect.width && currentFrameBitmap.rect.height === currentSprite.rect.height))
-							continue;
-						var tmpBMPDat:BitmapData = new BitmapData(currentSprite.rect.width, currentSprite.rect.height, true, SpriteSheet.TRANS_COLOR);
-						tmpBMPDat.copyPixels(_spritesheet, currentSprite.rect, new Point(), null, null, true);
-						if (tmpBMPDat.compare(upcomingBMPDat) == 0)
+						var currentSheet:BitmapData = _spriteBitmaps[k].bitmapData;
+						for (var j:int = 0; j < _frames && !skipSheet; j++)
 						{
-							//Store the new sprite object
-							if (currentSprite.registration.equals(registrationPoint))
+							var currentSprite:SpriteObject = findByImageIndex(j);
+							//Fail if sprite doesn't exist, the registration point doesn't match, or the rectangle is not the same height/width
+							if (!currentSprite || !(currentFrameBitmap.rect.width === currentSprite.rect.width && currentFrameBitmap.rect.height === currentSprite.rect.height))
+								continue;
+							var tmpBMPDat:BitmapData = new BitmapData(currentSprite.rect.width, currentSprite.rect.height, true, SpriteSheet.TRANS_COLOR);
+							tmpBMPDat.copyPixels(currentSheet, currentSprite.rect, new Point(), null, null, true);
+							if (tmpBMPDat.compare(upcomingBMPDat) == 0)
 							{
-								//Same registration point, we can re-use this slot on the sheet
-								animation.sprites.push(new SpriteObject(currentSprite.imageIndex, currentSprite.rect.clone(), currentSprite.registration.clone()));
-							} else
-							{
-								//Differing registration point, we'll have to insert a new frame index
-								animation.sprites.push(new SpriteObject(_frames++, currentSprite.rect.clone(), registrationPoint.clone()));
+								//Store the new sprite object
+								if (currentSprite.registration.equals(registrationPoint))
+								{
+									//Same registration point, we can re-use this slot on the sheet
+									animation.sprites.push(new SpriteObject(currentSprite.imageIndex, currentSprite.rect.clone(), currentSprite.registration.clone(), targetSheetIndex));
+								} else
+								{
+									//Differing registration point, we'll have to insert a new frame index
+									animation.sprites.push(new SpriteObject(_frames++, currentSprite.rect.clone(), registrationPoint.clone(), targetSheetIndex));
+								}
+								skipSheet = true;
 							}
-							skipSheet = true;
+							tmpBMPDat.dispose();
 						}
-						tmpBMPDat.dispose();
 					}
 					
 					//Dispose and skip next if we are on a duplicate frame
@@ -233,56 +230,68 @@ package com.mcleodgaming.spritesatchel.core
 						continue; //We're just going to use an already existing sprite
 					
 					//Before we draw the bitmap into our sprite sheet, we need to place it in a specific location
-					if(!_rowStart)
-						_currentPoint.x += _previousWidth + 1;
-					if (_currentPoint.x + currentFrameBitmap.width > SpriteSheet.MAX_DIMENSIONS)
+					if(!targetSheet.rowStart)
+						targetSheet.currentPoint.x += targetSheet.previousWidth + 1;
+					if (targetSheet.currentPoint.x + currentFrameBitmap.width > Main.Config.MaxWidth)
 					{
-						if (_rowStart)
+						if (targetSheet.rowStart)
 							EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Error, the first sprite of the sheet exceed maximum BitmapData dimensions"));
 						//Advance to the next spot on our sprite sheet (with 1 pixel buffer)
 						//Out of sheet width, next row of sprites begins
-						_currentPoint.x = 0;
-						_currentPoint.y += _currentMaxHeight + 1;
-						_currentMaxHeight = 0;
+						targetSheet.currentPoint.x = 0;
+						targetSheet.currentPoint.y += targetSheet.currentMaxHeight + 1;
+						targetSheet.currentMaxHeight = 0;
 					}
 					
 					//No longer on the first sprite in the row
-					_rowStart = false;
+					targetSheet.rowStart = false;
 					
 					//Save the previous width for when we move the point on the sheet later
-					_previousWidth = currentFrameBitmap.width;
+					targetSheet.previousWidth = currentFrameBitmap.width;
 					
 					//Store the current max height since we may need to resize our sheet (we also want to track where the next row will be)
-					_currentMaxHeight = Math.max(currentFrameBitmap.height, _currentMaxHeight);
+					targetSheet.currentMaxHeight = Math.max(currentFrameBitmap.height, targetSheet.currentMaxHeight);
 					
 					//At this point we have the location that the sprite is being put on the sprite sheet, so let's save this info in a Rectangle object
 					
-					//Save this as our "previous" sprite and add it to our animation frames 
-					prevSprite = new SpriteObject(_frames++, new Rectangle(_currentPoint.x, _currentPoint.y, currentFrameBitmap.width, currentFrameBitmap.height),registrationPoint.clone());
+					//Save this as our "previous" sprite for next loop and add it to our animation frames 
+					prevSprite = new SpriteObject(_frames++, new Rectangle(targetSheet.currentPoint.x, targetSheet.currentPoint.y, currentFrameBitmap.width, currentFrameBitmap.height),registrationPoint.clone(), targetSheetIndex);
 					animation.sprites.push(prevSprite);
 					
 					//Before we draw, let's make sure we can actually fit the sprite on our sheet
 					var resizedSheet:BitmapData = null;
-					while (_currentPoint.x + currentFrameBitmap.width >= _spritesheet.width && _currentPoint.x + currentFrameBitmap.width < SpriteSheet.MAX_DIMENSIONS)
+					while (targetSheet.currentPoint.x + currentFrameBitmap.width >= targetSheet.bitmapData.width && targetSheet.currentPoint.x + currentFrameBitmap.width < Main.Config.MaxWidth)
 					{
-						//Increase width 100 pixels at a time until we have enough width or we reach the max sheet width
-						resizedSheet = new BitmapData(_spritesheet.width * 2, _spritesheet.height, true, SpriteSheet.TRANS_COLOR);
-						resizedSheet.copyPixels(_spritesheet, _spritesheet.rect, new Point(), null, null, true);
-						_spritesheet.dispose();
-						_spritesheet = resizedSheet;
+						// Double width we have enough width or we reach the max sheet width
+						resizedSheet = new BitmapData(targetSheet.bitmapData.width * 2, targetSheet.bitmapData.height, true, SpriteSheet.TRANS_COLOR);
+						resizedSheet.copyPixels(targetSheet.bitmapData, targetSheet.bitmapData.rect, new Point(), null, null, true);
+						targetSheet.dispose();
+						targetSheet.bitmapData = resizedSheet;
 					}
-					while (_currentPoint.y + currentFrameBitmap.height > _spritesheet.height && _currentPoint.y + currentFrameBitmap.height < SpriteSheet.MAX_DIMENSIONS)
+					while (targetSheet.currentPoint.y + currentFrameBitmap.height >= targetSheet.bitmapData.height && targetSheet.currentPoint.y + currentFrameBitmap.height < Main.Config.MaxHeight)
 					{
-						//Increase height 100 pixels at a time until we have enough height or we reach max sheet height
-						resizedSheet = new BitmapData(_spritesheet.width, _spritesheet.height * 2, true, SpriteSheet.TRANS_COLOR);
-						resizedSheet.copyPixels(_spritesheet, _spritesheet.rect, new Point(), null, null, true);
-						_spritesheet.dispose();
-						_spritesheet = resizedSheet;
+						// Double height until we have enough height or we reach max sheet height
+						resizedSheet = new BitmapData(targetSheet.bitmapData.width, targetSheet.bitmapData.height * 2, true, SpriteSheet.TRANS_COLOR);
+						resizedSheet.copyPixels(targetSheet.bitmapData, targetSheet.bitmapData.rect, new Point(), null, null, true);
+						targetSheet.dispose();
+						targetSheet.bitmapData = resizedSheet;
+					}
+					
+					if (targetSheet.currentPoint.x + currentFrameBitmap.width > targetSheet.bitmapData.width || targetSheet.currentPoint.y + currentFrameBitmap.height > targetSheet.bitmapData.height)
+					{
+						// Image did not fit on sheet, bail this function and check the next sheet
+						if (targetSheetIndex + 1 >= _spriteBitmaps.length)
+						{
+							// Need to make a new bitmap first before doing
+							_spriteBitmaps.push(new SpriteBitmap());
+						}
+						importAnimation(name, mc, forceXScale, forceYScale, frameNum, _spriteBitmaps[_spriteBitmaps.length - 1]);
+						return;
 					}
 					
 					//Now we can draw the new bitmap onto our spritesheet after we get the snapshot from the MC
 					currentFrameBitmap.draw(mc, offset, mc.transform.colorTransform, null, null, true);
-					_spritesheet.copyPixels(currentFrameBitmap, currentFrameBitmap.rect, _currentPoint, null, null, true);
+					targetSheet.bitmapData.copyPixels(currentFrameBitmap, currentFrameBitmap.rect, targetSheet.currentPoint, null, null, true);
 				}
 			}
 		}
@@ -306,70 +315,71 @@ package com.mcleodgaming.spritesatchel.core
 		}
 		public function saveSpriteSheet(pngPath:String):void
 		{
-			//First fix path
-			var prefix:String = "";
-			if (pngPath.indexOf(".") == 0)
+			var targetPath:String;
+			for (var i:int = 0; i < _spriteBitmaps.length; i++)
 			{
-				//Relative to absolute
-				if (!Main.Config.FilePath)
+				targetPath = pngPath;
+				//First fix path
+				var prefix:String = "";
+				if (targetPath.indexOf(".") == 0)
 				{
-					EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Warning, cannot export " + _name + ".png to relative File path before saving Project.")); 
-					return;
+					//Relative to absolute
+					if (!Main.Config.FilePath)
+					{
+						EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Warning, cannot export " + _name + ".png to relative File path before saving Project.")); 
+						return;
+					} else
+					{
+						prefix = Main.Config.FilePath.substr(0, Main.Config.FilePath.lastIndexOf(File.separator)) + File.separator + targetPath + File.separator;
+					}
 				} else
 				{
-					prefix = Main.Config.FilePath.substr(0, Main.Config.FilePath.lastIndexOf(File.separator)) + File.separator + pngPath + File.separator;
+					//Already absolute
+					prefix = targetPath + File.separator;
 				}
-			} else
-			{
-				//Already absolute
-				prefix = pngPath + File.separator;
+				// Append # to the name if there's more than one sheet
+				targetPath = (_spriteBitmaps.length > 1) ? prefix + _name + i + ".png" : prefix + _name + ".png";
+				var directory:File = new File(prefix);
+				if (!directory.exists)
+					directory.createDirectory();
+				
+				var fullsheet:BitmapData = _spriteBitmaps[i].bitmapData;
+				var imgByteArray:ByteArray = PNGEncoder.encode(fullsheet);
+				
+				var	fs:FileStream = new FileStream();
+				fs.open(new File(targetPath), FileMode.WRITE);
+				fs.addEventListener(Event.SELECT, function(e:Event):void {} ); 
+				fs.addEventListener(IOErrorEvent.IO_ERROR,  function(e:IOErrorEvent):void {
+					//EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed with IOError.")); 
+				}); 
+				fs.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent):void {
+					//EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed with SecurityError.")); 
+				}); 
+				fs.addEventListener(ProgressEvent.PROGRESS, function(e:Event):void {}); 
+				fs.addEventListener(Event.COMPLETE, function(e:Event):void { 
+				});
+				fs.writeBytes(imgByteArray);
+				fs.close();
 			}
-			pngPath = prefix + _name + ".png";
-			var directory:File = new File(prefix);
-			if (!directory.exists)
-				directory.createDirectory();
-			
-			/*var headerMC:MovieClip = new MovieClip();
-			var headerText:TextField = new TextField();
-			var headerBMP:BitmapData = new BitmapData(_spritesheetList.width, HEADER_SIZE, true, SpriteSheet.TRANS_COLOR);
-			headerText.multiline = true;
-			headerText.width = _spritesheetList.width;
-			headerText.height = HEADER_SIZE;
-			headerText.text = _name + "\nSheet Size [" + _spritesheetList.width + "x" + (_spritesheetList.height) + "]\nThis spritesheet was generated by SpriteSatchel\n(c) 2013 Greg McLeod. http://www.mcleodgaming.com";
-			headerText.setTextFormat(new TextFormat("Courier New", 12, 0x000000));
-			headerMC.addChild(headerText);
-			headerMC.graphics.lineStyle(1);
-			headerMC.graphics.moveTo(0, 0);
-			headerMC.graphics.lineTo(_spritesheetList.width, 0);
-			headerBMP.draw(headerMC, null, null, null, null, false);
-			
-			var fullsheet:BitmapData = new BitmapData(_spritesheetList.width, _spritesheetList.height + HEADER_SIZE, true, SpriteSheet.TRANS_COLOR);
-			fullsheet.copyPixels(_spritesheetList, _spritesheetList.rect, new Point(), null, null, true);
-			fullsheet.copyPixels(headerBMP, headerBMP.rect, new Point(0, fullsheet.height - HEADER_SIZE), null, null, true);*/
-			
-			var fullsheet:BitmapData = _spritesheet
-			var imgByteArray:ByteArray = PNGEncoder.encode(fullsheet);
-			
-			var	fs:FileStream = new FileStream();
-			fs.open(new File(pngPath), FileMode.WRITE);
-			fs.addEventListener(Event.SELECT, function(e:Event):void {} ); 
-			fs.addEventListener(IOErrorEvent.IO_ERROR,  function(e:IOErrorEvent):void {
-				//EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed with IOError.")); 
-			}); 
-			fs.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent):void {
-				//EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed with SecurityError.")); 
-			}); 
-			fs.addEventListener(ProgressEvent.PROGRESS, function(e:Event):void {}); 
-			fs.addEventListener(Event.COMPLETE, function(e:Event):void { 
-			});
-			fs.writeBytes(imgByteArray);
-			fs.close();
 		}
 		public function saveJSON(jsonPath:String):void
 		{
 			var i:int = 0;
 			//First fix path
 			var prefix:String = "";
+			var imageStrings:Array = new Array();
+			if (_spriteBitmaps.length > 1)
+			{
+				// Append # to the name if there's more than one sheet
+				for (i = 0; i < _spriteBitmaps.length; i++)
+				{
+					imageStrings.push('"' + Main.Config.PNGExportPath + File.separator + _name + i + '.png"');
+				}
+			} else
+			{
+				imageStrings.push('"' + Main.Config.PNGExportPath + File.separator + _name + '.png"');
+			}
+			
 			if (jsonPath.indexOf(".") == 0)
 			{
 				//Relative to absolute
@@ -401,14 +411,14 @@ package com.mcleodgaming.spritesatchel.core
 			for (var frameNum:int = 0; frameNum < _frames; frameNum++)
 			{
 				var singleFrame:SpriteObject = findByImageIndex(frameNum);
-				jsonData += tabs + "[" + singleFrame.rect.x + ", " + singleFrame.rect.y + ", " + singleFrame.rect.width + ", " + singleFrame.rect.height + ", " + 0 + ", " + -singleFrame.registration.x + ", " + -singleFrame.registration.y + "]," + Main.NEWLINE;
+				jsonData += tabs + "[" + singleFrame.rect.x + ", " + singleFrame.rect.y + ", " + singleFrame.rect.width + ", " + singleFrame.rect.height + ", " + singleFrame.sheetIndex + ", " + -singleFrame.registration.x + ", " + -singleFrame.registration.y + "]," + Main.NEWLINE;
 			}
 			jsonData = jsonData.substr(0, jsonData.lastIndexOf(",")) + jsonData.substr(jsonData.lastIndexOf("," + 1));
 			tabs = tabs.substr(1);
 			
 			jsonData += tabs + "]," + Main.NEWLINE;
 			
-			jsonData += tabs + ("\"images\": [\"" + Main.Config.PNGExportPath + File.separator + _name + ".png\"]," + Main.NEWLINE).split(File.separator).join("/");
+			jsonData += tabs + ("\"images\": [" + imageStrings.join(', ') + "]," + Main.NEWLINE).split(File.separator).join("/");
 			
 			jsonData += tabs + "\"animations\": {";
 			

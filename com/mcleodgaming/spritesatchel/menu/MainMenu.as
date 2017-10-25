@@ -240,6 +240,10 @@ package com.mcleodgaming.spritesatchel.menu
 						Main.Config.JSONExportPath = data.config.jsonExportPath;
 					if (data.config.pngExportPath)
 						Main.Config.PNGExportPath = data.config.pngExportPath;
+					if (data.config.maxWidth)
+						Main.Config.MaxWidth = data.config.maxWidth;
+					if (data.config.maxHeight)
+						Main.Config.MaxHeight = data.config.maxHeight;
 				}
 				if (data.sources)
 				{
