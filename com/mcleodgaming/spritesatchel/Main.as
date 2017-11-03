@@ -200,7 +200,7 @@ package com.mcleodgaming.spritesatchel
 			EventManager.dispatcher.addEventListener(SpriteSatchelEvent.FILE_CHANGED, handleFileChanged);
 			
 			// Default dimensions
-			width_4096_CLICK(null);
+			width_2048_CLICK(null);
 			height_2048_CLICK(null);
 		}
 		
