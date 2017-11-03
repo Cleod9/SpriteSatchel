@@ -373,11 +373,11 @@ package com.mcleodgaming.spritesatchel.core
 				// Append # to the name if there's more than one sheet
 				for (i = 0; i < _spriteBitmaps.length; i++)
 				{
-					imageStrings.push('"' + Main.Config.PNGExportPath + File.separator + _name + i + '.png"');
+					imageStrings.push('"' + new File(Main.Config.PNGExportPath + File.separator + _name + i + '.png').name + '"');
 				}
 			} else
 			{
-				imageStrings.push('"' + Main.Config.PNGExportPath + File.separator + _name + '.png"');
+				imageStrings.push('"' + new File(Main.Config.PNGExportPath + File.separator + _name + '.png').name + '"');
 			}
 			
 			if (jsonPath.indexOf(".") == 0)
