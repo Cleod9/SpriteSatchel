@@ -31,10 +31,13 @@ package com.mcleodgaming.spritesatchel.menu
 	import flash.filesystem.FileStream;
 	import flash.net.FileFilter;
 	import flash.net.FileReference;
+	import flash.net.URLLoader;
+	import flash.net.URLLoaderDataFormat;
 	import flash.net.URLRequest;
 	import flash.system.ApplicationDomain;
 	import flash.system.LoaderContext;
 	import flash.text.TextField;
+	import flash.utils.ByteArray;
 	import flash.utils.Timer;
 	
 	public class MainMenu extends Menu
@@ -282,45 +285,56 @@ package com.mcleodgaming.spritesatchel.menu
 			var loadExcludeSettingsFromSWF:Boolean = (!settings);
 			if (!settings)
 				settings = { export: true, exclude: null };
-			var loader:Loader = new Loader();
-			var loaderContext:LoaderContext = new LoaderContext();
-			var i:int = 0;
-			loaderContext.allowCodeImport = true;
-			loaderContext.allowLoadBytesCodeExecution = true;
-			loaderContext.applicationDomain = new ApplicationDomain(Main.Root.loaderInfo.applicationDomain);
-			loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, function(e:IOErrorEvent):void { println("[IOError] There was a problem loading the file."); } );
-			loader.contentLoaderInfo.addEventListener(Event.INIT,  function(e:Event):void { /*println("Loader initialized.");*/ });
-			loader.contentLoaderInfo.addEventListener(Event.COMPLETE,  function(e:Event):void { 
-				println("Load complete."); 
-				println("\"" + file.nativePath + "\" has been added to sources list."); 
-				var source:SatchelSource = new SatchelSource((loader.content as MovieClip) ? loader.content as MovieClip : null, file.nativePath);
-				if (settings.export !== undefined)
-					source.Export = settings.export;
-					
-				//For SWFs opened directly, load the manifest individual exclude settings
-				if (loadExcludeSettingsFromSWF && source.SourceClip.manifest)
-				{
-					for (i = 0; i < source.SourceClip.manifest.length; i++)
-					{
-						if (!(source.SourceClip.manifest[i].exclude == undefined || !source.SourceClip.manifest[i].exclude))
-							source.ExcludeList.push(source.SourceClip.manifest[i].linkage);
-					}
-				} else if(settings.exclude)
-				{
-					//Grab data passed in from save data
-					var excludeList:Array = settings.exclude;
-					for (i = 0; i < source.SourceClip.manifest.length; i++)
-					{
-						if (settings.exclude.indexOf(source.SourceClip.manifest[i].linkage) >= 0)
-							source.ExcludeList.push(source.SourceClip.manifest[i].linkage);
-					}
-				}
-				Main.Config.Sources.push(source);
-				_sourcesList.addItem( { label: source.Path, source: source} );
-			});
-			loader.contentLoaderInfo.addEventListener(ProgressEvent.PROGRESS,  function(e:ProgressEvent):void { /*println("Loader progressing...");*/ });
+			var urlLoader:URLLoader = new URLLoader();
+			urlLoader.dataFormat = URLLoaderDataFormat.BINARY;
 			
-			loader.load(new URLRequest(file.url));
+			urlLoader.addEventListener(IOErrorEvent.IO_ERROR, function(e:IOErrorEvent):void { println("[IOError] There was a problem loading the file."); } );
+			urlLoader.addEventListener(Event.INIT,  function(e:Event):void { /*println("Loader initialized.");*/ });
+			urlLoader.addEventListener(Event.COMPLETE,  function(e:Event):void { 
+				var loader:Loader = new Loader();
+				var loaderContext:LoaderContext = new LoaderContext();
+				var i:int = 0;
+				loaderContext.allowCodeImport = true;
+				loaderContext.allowLoadBytesCodeExecution = true;
+				loaderContext.applicationDomain = new ApplicationDomain(Main.Root.loaderInfo.applicationDomain);
+			
+				loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, function(e:IOErrorEvent):void { println("[IOError] There was a problem loading the file."); } );
+				loader.contentLoaderInfo.addEventListener(Event.INIT,  function(e:Event):void { /*println("Loader initialized.");*/ });
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE,  function(e:Event):void { 
+					var source:SatchelSource = new SatchelSource((loader.content as MovieClip) ? loader.content as MovieClip : null, file.nativePath);
+					if (settings.export !== undefined)
+						source.Export = settings.export;
+						
+					//For SWFs opened directly, load the manifest individual exclude settings
+					if (loadExcludeSettingsFromSWF && source.SourceClip.manifest)
+					{
+						for (i = 0; i < source.SourceClip.manifest.length; i++)
+						{
+							if (!(source.SourceClip.manifest[i].exclude == undefined || !source.SourceClip.manifest[i].exclude))
+								source.ExcludeList.push(source.SourceClip.manifest[i].linkage);
+						}
+					} else if(settings.exclude)
+					{
+						//Grab data passed in from save data
+						var excludeList:Array = settings.exclude;
+						for (i = 0; i < source.SourceClip.manifest.length; i++)
+						{
+							if (settings.exclude.indexOf(source.SourceClip.manifest[i].linkage) >= 0)
+								source.ExcludeList.push(source.SourceClip.manifest[i].linkage);
+						}
+					}
+					Main.Config.Sources.push(source);
+					_sourcesList.addItem( { label: source.Path, source: source} );
+					
+					println("Load complete."); 
+					println("\"" + file.nativePath + "\" has been added to sources list."); 
+					EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.FILE_CHANGED, "Project has been modified."));
+				});
+				loader.contentLoaderInfo.addEventListener(ProgressEvent.PROGRESS,  function(e:ProgressEvent):void { /*println("Loader progressing...");*/ });
+				
+				loader.loadBytes(urlLoader.data as ByteArray, loaderContext);
+			});
+			urlLoader.load(new URLRequest(file.url));
 		}
 		public function processSource(source:SatchelSource):void
 		{
@@ -538,36 +552,8 @@ package com.mcleodgaming.spritesatchel.menu
 			});
 			openDialog.addEventListener(Event.SELECT, function(e:Event):void {
 				var file:File = e.target as File;
-				var loader:Loader = new Loader();
-				var loaderContext:LoaderContext = new LoaderContext();
-				loaderContext.allowCodeImport = true;
-				loaderContext.allowLoadBytesCodeExecution = true;
-				loaderContext.applicationDomain = new ApplicationDomain(Main.Root.loaderInfo.applicationDomain);
-				loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, function(e:IOErrorEvent):void {
-					println("[IOError] There was a problem loading the file."); 
-					removeClickBlocker(); 
-				});
-				loader.contentLoaderInfo.addEventListener(Event.INIT,  function(e:Event):void { 
-					/*println("Loader initialized.");*/
-					removeClickBlocker(); 
-				});
-				loader.contentLoaderInfo.addEventListener(ProgressEvent.PROGRESS,  function(e:ProgressEvent):void { 
-					/*println("Loader progressing...");*/ 
-					removeClickBlocker(); 
-				});
-				loader.contentLoaderInfo.addEventListener(Event.COMPLETE,  function(e:Event):void { 
-					var source:SatchelSource = new SatchelSource((loader.content as MovieClip) ? loader.content as MovieClip : null, file.nativePath);
-					Main.Config.Sources.push(source);
-					processSource(source); 
-					_sourcesList.addItem( { label: source.Path, source: source } );
-					removeClickBlocker();
-					if(_spriteSourceDropdown.items.length > 0)
-						setOptionsEnabled(true);
-					println("Load complete."); 
-					println("\"" + file.nativePath + "\" has been added to sources list."); 
-					EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.FILE_CHANGED, "Project has been modified."));
-				});
-				loader.load(new URLRequest(file.url));
+				importSWF(file);
+				removeClickBlocker();
 			});
 		}
 		private function removeSource_CLICK(e:MouseEvent):void

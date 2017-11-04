@@ -194,34 +194,30 @@ package com.mcleodgaming.spritesatchel.core
 					var upcomingBMPDat:BitmapData = new BitmapData(Math.ceil(boundsRect.width * scaleX), Math.ceil(boundsRect.height * scaleY), true, SpriteSheet.TRANS_COLOR);
 					upcomingBMPDat.draw(mc, offset, mc.transform.colorTransform, null, null, true);
 					
-					// Note: If targetSpriteBitmap was defined we already checked for dupes
-					for (k = 0; k < _spriteBitmaps.length && !skipSheet && !targetSpriteBitmap; k++)
+					// For each frame
+					for (k = 0; k < _frames && !skipSheet; k++)
 					{
-						var currentSheet:BitmapData = _spriteBitmaps[k].bitmapData;
-						for (var j:int = 0; j < _frames && !skipSheet; j++)
+						var currentSprite:SpriteObject = findByFrameIndex(k);
+						//Fail if sprite doesn't exist, the registration point doesn't match, or the rectangle is not the same height/width
+						if (!currentSprite || !(currentFrameBitmap.rect.width === currentSprite.rect.width && currentFrameBitmap.rect.height === currentSprite.rect.height))
+							continue;
+						var tmpBMPDat:BitmapData = new BitmapData(currentSprite.rect.width, currentSprite.rect.height, true, SpriteSheet.TRANS_COLOR);
+						tmpBMPDat.copyPixels(_spriteBitmaps[currentSprite.sheetIndex].bitmapData, currentSprite.rect, new Point(), null, null, true);
+						if (tmpBMPDat.compare(upcomingBMPDat) == 0)
 						{
-							var currentSprite:SpriteObject = findByImageIndex(j);
-							//Fail if sprite doesn't exist, the registration point doesn't match, or the rectangle is not the same height/width
-							if (!currentSprite || !(currentFrameBitmap.rect.width === currentSprite.rect.width && currentFrameBitmap.rect.height === currentSprite.rect.height))
-								continue;
-							var tmpBMPDat:BitmapData = new BitmapData(currentSprite.rect.width, currentSprite.rect.height, true, SpriteSheet.TRANS_COLOR);
-							tmpBMPDat.copyPixels(currentSheet, currentSprite.rect, new Point(), null, null, true);
-							if (tmpBMPDat.compare(upcomingBMPDat) == 0)
+							//Store the new sprite object
+							if (currentSprite.registration.equals(registrationPoint))
 							{
-								//Store the new sprite object
-								if (currentSprite.registration.equals(registrationPoint))
-								{
-									//Same registration point, we can re-use this slot on the sheet
-									animation.sprites.push(new SpriteObject(currentSprite.imageIndex, currentSprite.rect.clone(), currentSprite.registration.clone(), targetSheetIndex));
-								} else
-								{
-									//Differing registration point, we'll have to insert a new frame index
-									animation.sprites.push(new SpriteObject(_frames++, currentSprite.rect.clone(), registrationPoint.clone(), targetSheetIndex));
-								}
-								skipSheet = true;
+								//Same registration point, we can re-use this slot on the sheet
+								animation.sprites.push(new SpriteObject(currentSprite.frameIndex, currentSprite.rect.clone(), currentSprite.registration.clone(), targetSheetIndex));
+							} else
+							{
+								//Differing registration point, we'll have to insert a new frame index
+								animation.sprites.push(new SpriteObject(_frames++, currentSprite.rect.clone(), registrationPoint.clone(), targetSheetIndex));
 							}
-							tmpBMPDat.dispose();
+							skipSheet = true;
 						}
+						tmpBMPDat.dispose();
 					}
 					
 					//Dispose and skip next if we are on a duplicate frame
@@ -295,12 +291,12 @@ package com.mcleodgaming.spritesatchel.core
 				}
 			}
 		}
-		public function findByImageIndex(imageIndex:int):SpriteObject
+		public function findByFrameIndex(frameIndex:int):SpriteObject
 		{
 			var result:SpriteObject = null;
 			for (var i:int = 0; i < _animations.length; i++)
 			{
-				result = _animations[i].findByImageIndex(imageIndex);
+				result = _animations[i].findByFrameIndex(frameIndex);
 				if (result)
 					return result;
 			}
@@ -410,7 +406,7 @@ package com.mcleodgaming.spritesatchel.core
 			
 			for (var frameNum:int = 0; frameNum < _frames; frameNum++)
 			{
-				var singleFrame:SpriteObject = findByImageIndex(frameNum);
+				var singleFrame:SpriteObject = findByFrameIndex(frameNum);
 				jsonData += tabs + "[" + singleFrame.rect.x + ", " + singleFrame.rect.y + ", " + singleFrame.rect.width + ", " + singleFrame.rect.height + ", " + singleFrame.sheetIndex + ", " + -singleFrame.registration.x + ", " + -singleFrame.registration.y + "]," + Main.NEWLINE;
 			}
 			jsonData = jsonData.substr(0, jsonData.lastIndexOf(",")) + jsonData.substr(jsonData.lastIndexOf("," + 1));
@@ -429,7 +425,7 @@ package com.mcleodgaming.spritesatchel.core
 				var framesList:Array = new Array();
 				for (i = 0; i < _animations[animationNum].sprites.length; i++)
 				{
-					framesList.push(_animations[animationNum].sprites[i].imageIndex);
+					framesList.push(_animations[animationNum].sprites[i].frameIndex);
 				}
 				jsonData += "\"frames\": [" + framesList.join(", ") + "]";
 				

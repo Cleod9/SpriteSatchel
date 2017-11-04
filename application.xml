@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<application xmlns="http://ns.adobe.com/air/application/16.0">
+<application xmlns="http://ns.adobe.com/air/application/23.0">
   <id>com.mcleodgaming.spritesatchel</id>
-  <versionNumber>0.6.2</versionNumber>
+  <versionNumber>0.6.3</versionNumber>
   <filename>SpriteSatchel</filename>
   <name>SpriteSatchel</name>
   <description>Easily batch convert your MovieClips from an entire SWF library into SpriteSheets.</description>
@@ -26,4 +26,5 @@
   <android>
     <manifestAdditions><![CDATA[<manifest android:installLocation="auto" xmlns:android="http://schemas.android.com/apk/res/android" />]]></manifestAdditions>
   </android>
+  <supportedProfiles>desktop</supportedProfiles>
 </application>

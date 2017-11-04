@@ -14,11 +14,11 @@ package com.mcleodgaming.spritesatchel.core
 			hitboxes = null;
 		}
 		
-		public function findByImageIndex(imageIndex:int):SpriteObject
+		public function findByFrameIndex(frameIndex:int):SpriteObject
 		{
 			for (var i:int = 0; i < sprites.length; i++)
 			{
-				if (sprites[i].imageIndex == imageIndex)
+				if (sprites[i].frameIndex == frameIndex)
 					return sprites[i];
 			}
 			return null;
