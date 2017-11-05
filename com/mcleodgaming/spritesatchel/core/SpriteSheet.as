@@ -166,6 +166,16 @@ package com.mcleodgaming.spritesatchel.core
 						boundsRect.width = 1;
 						boundsRect.height = 1;
 					}
+					if (boundsRect.width > Main.Config.MaxWidth)
+					{
+						EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Warning, animation '" + name + "' contains a frame that exceeds maximum sheet width")); 
+						boundsRect.width = Main.Config.MaxWidth;
+					}
+					if (boundsRect.height > Main.Config.MaxHeight)
+					{
+						EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Warning, animation '" + name + "' contains a frame that exceeds maximum sheet height")); 
+						boundsRect.height = Main.Config.MaxHeight;
+					}
 					
 					//Create the blank bitmap for the frame and get transform info
 					var currentFrameBitmap:BitmapData = new BitmapData(Math.ceil(boundsRect.width * scaleX), Math.ceil(boundsRect.height * scaleY), true, SpriteSheet.TRANS_COLOR);
@@ -230,8 +240,6 @@ package com.mcleodgaming.spritesatchel.core
 						targetSheet.currentPoint.x += targetSheet.previousWidth + 1;
 					if (targetSheet.currentPoint.x + currentFrameBitmap.width > Main.Config.MaxWidth)
 					{
-						if (targetSheet.rowStart)
-							EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Error, the first sprite of the sheet exceed maximum BitmapData dimensions"));
 						//Advance to the next spot on our sprite sheet (with 1 pixel buffer)
 						//Out of sheet width, next row of sprites begins
 						targetSheet.currentPoint.x = 0;

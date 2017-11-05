@@ -2,17 +2,18 @@
 
 ----------
 
-SpriteSatchel is a tool for converting SWF animations into SpriteSheets for [CreateJS](http://createjs.com/Home). The tool is designed as an alternative to [Zoë](https://github.com/CreateJS/Zoe), but provides a slightly different workflow to support storing many spritesheets within one FLA. Additional details are listed below.
+SpriteSatchel is a tool for converting SWF animations into SpriteSheets for [CreateJS](http://createjs.com/Home). The tool is designed as an alternative to [Zoë](https://github.com/CreateJS/Zoe), and provides a slightly different workflow to support storing many spritesheets within one FLA. Additional details are listed below.
 
 SpriteSatchel can work on any SWF content Flash 9.0 and above, and it requires [Adobe AIR](https://get.adobe.com/air/) to install the software. Exported SpriteSheets are confirmed to work with the EaselJS package version 0.7.* and above, but is likely to work with earlier versions as well assuming the JSON data format hasn't changed. 
 
-Download version 0.5.14 here:
+Download version 0.6.4 here:
 
-http://www.mcleodgaming.com/downloads/SpriteSatchel.0.5.14.air
+http://www.mcleodgaming.com/downloads/SpriteSatchel.0.6.4.air
 
 ## Features ##
 
 - Converts MovieClip assets from a SWF's library into spritesheet PNGs and JSON files compatible with CreateJS
+- Sprites overflow onto multiple sheets as maximum sprite sheet dimensions are reached
 - Supports storing **hitbox data** drawn over animations and writes them out as JSON (great for anchor points!)
 - Save your project's settings to a file so that you can quickly re-export the next time you open
 - Add multiple SWF files as sources
@@ -151,16 +152,14 @@ The remaining properties are automatically calculated and inserted into the JSON
 
 ## Build Process ##
 
-If you have FlashDevelop and are familiar with AIR development it should be pretty straightforward. Just create a dummy certificate and build the project. But I will add additional information on how to manually build this project soon.
+If you have FlashDevelop and are familiar with AIR development it should be pretty straightforward. Just create a dummy certificate and build the project. But I will add additional information on how to manually build this project at some point.
 
 (Details coming soon)
 
 ## Future Plans? ##
 
-- Improving the save file functionality
-- Customizable sprite sheet dimensions (currently it's automatic)
+- Improving the Project save file functionality
 - Output to additional spritesheet formats besides CreateJS (Possibly)
-- Overflow onto multiple spritesheets (for when max sized is reached)
 - UI improvements (ideas appreciated!)
 - ...Other Suggestions?
 
@@ -169,6 +168,6 @@ If you have FlashDevelop and are familiar with AIR development it should be pret
 
 ----------
 
-Copyrighted © 2016 by Greg McLeod
+Copyright © 2017 by Greg McLeod
 
 GitHub: [https://github.com/cleod9](https://github.com/cleod9)
