@@ -87,10 +87,27 @@ package com.mcleodgaming.spritesatchel.core
 			});
 			timer.start();
 		}
+		public function findAnimationByID(id:String):Animation
+		{
+			for (var i:int = 0; i < _animations.length; i++)
+			{
+				if (_animations[i].id === id) {
+					return _animations[i];
+				}
+			}
+			return null;
+		}
 		public function importAnimation(name:String, mc:MovieClip, forceXScale:Number = 1, forceYScale:Number = 1, startingFrame:int = 1, targetSpriteBitmap:SpriteBitmap = null):void
 		{
-			var animation:Animation = new Animation(name); 
-			_animations.push(animation);
+			var animation:Animation = findAnimationByID(name);
+			if (!animation)
+			{
+				// Only creat a new animation object if it doesn't exist yet
+				animation = new Animation(name);
+				animation.hitboxes = HitBoxAnimation.createHitBoxAnimation(_name + "_" + name, mc, mc.parent, null);
+				_animations.push(animation);
+			}
+			
 			
 			var frameNum:int = startingFrame;
 			var scaleX:Number = 1;
@@ -109,8 +126,6 @@ package com.mcleodgaming.spritesatchel.core
 			origScaleY = (forceYScale == 1) ? mc.scaleY : forceYScale;
 			scaleX = origScaleX;
 			scaleY = origScaleY;
-			
-			animation.hitboxes = HitBoxAnimation.createHitBoxAnimation(_name + "_" + name, mc, mc.parent, null);
 			
 			//For each frame in the movie clip we are importing
 			mc.gotoAndStop(frameNum);
@@ -219,11 +234,11 @@ package com.mcleodgaming.spritesatchel.core
 							if (currentSprite.registration.equals(registrationPoint))
 							{
 								//Same registration point, we can re-use this slot on the sheet
-								animation.sprites.push(new SpriteObject(currentSprite.frameIndex, currentSprite.rect.clone(), currentSprite.registration.clone(), targetSheetIndex));
+								animation.sprites.push(new SpriteObject(currentSprite.frameIndex, currentSprite.rect.clone(), currentSprite.registration.clone(), currentSprite.sheetIndex));
 							} else
 							{
 								//Differing registration point, we'll have to insert a new frame index
-								animation.sprites.push(new SpriteObject(_frames++, currentSprite.rect.clone(), registrationPoint.clone(), targetSheetIndex));
+								animation.sprites.push(new SpriteObject(_frames++, currentSprite.rect.clone(), registrationPoint.clone(), currentSprite.sheetIndex));
 							}
 							skipSheet = true;
 						}
@@ -259,8 +274,7 @@ package com.mcleodgaming.spritesatchel.core
 					//At this point we have the location that the sprite is being put on the sprite sheet, so let's save this info in a Rectangle object
 					
 					//Save this as our "previous" sprite for next loop and add it to our animation frames 
-					prevSprite = new SpriteObject(_frames++, new Rectangle(targetSheet.currentPoint.x, targetSheet.currentPoint.y, currentFrameBitmap.width, currentFrameBitmap.height),registrationPoint.clone(), targetSheetIndex);
-					animation.sprites.push(prevSprite);
+					prevSprite = new SpriteObject(_frames, new Rectangle(targetSheet.currentPoint.x, targetSheet.currentPoint.y, currentFrameBitmap.width, currentFrameBitmap.height),registrationPoint.clone(), targetSheetIndex);
 					
 					//Before we draw, let's make sure we can actually fit the sprite on our sheet
 					var resizedSheet:BitmapData = null;
@@ -296,6 +310,10 @@ package com.mcleodgaming.spritesatchel.core
 					//Now we can draw the new bitmap onto our spritesheet after we get the snapshot from the MC
 					currentFrameBitmap.draw(mc, offset, mc.transform.colorTransform, null, null, true);
 					targetSheet.bitmapData.copyPixels(currentFrameBitmap, currentFrameBitmap.rect, targetSheet.currentPoint, null, null, true);
+					
+					// Can safely increment frames
+					_frames++;
+					animation.sprites.push(prevSprite);
 				}
 			}
 		}
