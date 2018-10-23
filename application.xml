@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <application xmlns="http://ns.adobe.com/air/application/23.0">
   <id>com.mcleodgaming.spritesatchel</id>
-  <versionNumber>0.6.5</versionNumber>
+  <versionNumber>0.7.0</versionNumber>
   <filename>SpriteSatchel</filename>
   <name>SpriteSatchel</name>
   <description>Easily batch convert your MovieClips from an entire SWF library into SpriteSheets.</description>
@@ -19,7 +19,7 @@
 	More options:
 	http://livedocs.adobe.com/flex/3/html/File_formats_1.html#1043413
 	-->
-  <copyright>2017</copyright>
+  <copyright>2018</copyright>
   <icon>
     <image32x32>icons/SpriteSatchel32.png</image32x32>
   </icon>

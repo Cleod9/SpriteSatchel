@@ -53,7 +53,7 @@ package com.mcleodgaming.spritesatchel
 		private var m_fileMenu:NativeMenu;
 		
 		private var m_settingsMenu:NativeMenu;
-		
+		private var m_exportModeMenu:NativeMenu;
 		private var m_dimensionsMenu:NativeMenu;
 		
 		private var m_helpMenu:NativeMenu;
@@ -75,6 +75,9 @@ package com.mcleodgaming.spritesatchel
 		private var m_maxHeight2048:NativeMenuItem;
 		private var m_maxHeight4096:NativeMenuItem;
 		private var m_maxHeight8192:NativeMenuItem;
+		
+		private var m_createJSMode:NativeMenuItem;
+		private var m_pngSequenceMode:NativeMenuItem;
 		
 		// Help
 		private var m_about:NativeMenuItem;
@@ -98,6 +101,7 @@ package com.mcleodgaming.spritesatchel
 			m_menu = new NativeMenu();
 			m_fileMenu = new NativeMenu();
 			m_settingsMenu = new NativeMenu();
+			m_exportModeMenu = new NativeMenu();
 			m_dimensionsMenu = new NativeMenu();
 			m_helpMenu = new NativeMenu();
 			
@@ -115,10 +119,12 @@ package com.mcleodgaming.spritesatchel
 			m_maxWidth4096 = new NativeMenuItem("4096px W");
 			m_maxWidth8192 = new NativeMenuItem("8192px W");
 			
-			//Create Settings menu items
 			m_maxHeight2048 = new NativeMenuItem("2048px H");
 			m_maxHeight4096 = new NativeMenuItem("4096px H");
 			m_maxHeight8192 = new NativeMenuItem("8192px H");
+			
+			m_createJSMode = new NativeMenuItem("CreateJS");
+			m_pngSequenceMode = new NativeMenuItem("PNG Sequence");
 			
 			// Create Help Menu Items
 			m_about = new NativeMenuItem("About");
@@ -144,6 +150,7 @@ package com.mcleodgaming.spritesatchel
 			m_fileMenu.addItem(m_exit);
 			
 			m_settingsMenu.addSubmenu(m_dimensionsMenu, "Max Dimensons");
+			m_settingsMenu.addSubmenu(m_exportModeMenu, "Export Format");
 			
 			m_dimensionsMenu.addItem(m_maxWidth2048);
 			m_dimensionsMenu.addItem(m_maxWidth4096);
@@ -153,6 +160,9 @@ package com.mcleodgaming.spritesatchel
 			m_dimensionsMenu.addItem(m_maxHeight2048);
 			m_dimensionsMenu.addItem(m_maxHeight4096);
 			m_dimensionsMenu.addItem(m_maxHeight8192);
+			
+			m_exportModeMenu.addItem(m_createJSMode);
+			m_exportModeMenu.addItem(m_pngSequenceMode);
 			
 			m_helpMenu.addItem(m_about);
 			
@@ -191,6 +201,9 @@ package com.mcleodgaming.spritesatchel
 			m_maxHeight4096.addEventListener(Event.SELECT, height_4096_CLICK);
 			m_maxHeight8192.addEventListener(Event.SELECT, height_8192_CLICK);
 			
+			m_createJSMode.addEventListener(Event.SELECT, createjs_mode_CLICK);
+			m_pngSequenceMode.addEventListener(Event.SELECT, png_mode_CLICK);
+			
 			m_about.addEventListener(Event.SELECT, about_CLICK);
 			
 			//Fix title
@@ -202,8 +215,16 @@ package com.mcleodgaming.spritesatchel
 			// Default dimensions
 			width_2048_CLICK(null);
 			height_2048_CLICK(null);
+			
+			// Default export mode
+			createjs_mode_CLICK(null);
 		}
-		
+		public static function showAlert(msg:String):void
+		{
+			var alertBox:HTMLLoader = new HTMLLoader();
+            alertBox.loadString("<html></html>");
+			alertBox.window.alert(msg);
+		}
 		public static function get Config():SatchelConfig
 		{
 			return Main._config
@@ -290,6 +311,13 @@ package com.mcleodgaming.spritesatchel
 				{
 					height_8192_CLICK(null);
 				}
+				if (_config.ExportMode === "createjs")
+				{
+					createjs_mode_CLICK(null);
+				} else
+				{
+					png_mode_CLICK(null);
+				}
 				Main.setTitle(Main.TITLE + " - " + Main.Config.ProjectName);
 			});
 			openDialog.addEventListener(Event.CANCEL, function():void { MenuController.mainMenu.println("Action cancelled"); } );
@@ -350,9 +378,7 @@ package com.mcleodgaming.spritesatchel
 		}
 		private function about_CLICK(e:Event):void
 		{
-			var alertBox:HTMLLoader = new HTMLLoader();
-            alertBox.loadString("<html></html>");
-			alertBox.window.alert("SpriteSatchel Version " + SatchelConfig.VERSION + "\nAuthored by Greg McLeod");
+			Main.showAlert("SpriteSatchel Version " + SatchelConfig.VERSION + "\nAuthored by Greg McLeod");
 		}
 		
 		/**
@@ -434,6 +460,18 @@ package com.mcleodgaming.spritesatchel
 			m_maxHeight4096.checked = false;
 			m_maxHeight8192.checked = true;
 			_config.MaxHeight = 8192;
+		}
+		private function createjs_mode_CLICK(e:Event):void
+		{
+			_config.ExportMode = "createjs";
+			m_createJSMode.checked = _config.ExportMode === "createjs";
+			m_pngSequenceMode.checked = _config.ExportMode === "png";
+		}
+		private function png_mode_CLICK(e:Event):void
+		{
+			_config.ExportMode = "png";
+			m_createJSMode.checked = _config.ExportMode === "createjs";
+			m_pngSequenceMode.checked = _config.ExportMode === "png";
 		}
 	}
 	

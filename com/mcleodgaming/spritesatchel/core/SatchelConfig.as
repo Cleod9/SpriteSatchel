@@ -1,12 +1,13 @@
 package com.mcleodgaming.spritesatchel.core 
 {
 	import com.adobe.utils.StringUtil;
+	import com.mcleodgaming.spritesatchel.Main;
 	import com.mcleodgaming.spritesatchel.util.Utils;
 	import flash.display.MovieClip;
 	import flash.filesystem.File;
 	public class SatchelConfig 
 	{
-		public static const VERSION:String = "0.6.5";
+		public static const VERSION:String = "0.7.0";
 		
 		private var _date:Date;
 		private var _filePath:String;
@@ -63,7 +64,13 @@ package com.mcleodgaming.spritesatchel.core
 		}
 		public function set ExportMode(value:String):void
 		{
-			_exportMode = value;
+			if (_exportMode !== "createjs" && _exportMode !== "png")
+			{
+				Main.showAlert("Error, invalid export mode: " + value);
+			} else
+			{
+				_exportMode = value;
+			}
 		}
 		public function get JSONExportPath():String
 		{

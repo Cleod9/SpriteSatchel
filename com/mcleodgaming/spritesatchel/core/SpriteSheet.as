@@ -331,14 +331,38 @@ package com.mcleodgaming.spritesatchel.core
 		public function exportAll(pngPath:String, jsonPath:String):void 
 		{
 			saveSpriteSheet(pngPath);
-			saveJSON(jsonPath);
+			if (Main.Config.ExportMode === "createjs")
+			{
+				saveJSON(jsonPath);
+			}
 			EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed.")); 
 			HitBoxAnimation.flushCache();
 		}
 		public function saveSpriteSheet(pngPath:String):void
 		{
+			if (Main.Config.ExportMode === "png")
+			{
+				saveSpriteSheetAsPNGSequence(pngPath);
+			} else
+			{
+				saveSpriteSheetForCreateJS(pngPath);
+			}
+		}
+		public function saveSpriteSheetForCreateJS(pngPath:String):void
+		{
+			var i:int = 0;
+			var j:int = 0;
 			var targetPath:String;
-			for (var i:int = 0; i < _spriteBitmaps.length; i++)
+			var bitmapsToExport:Vector.<BitmapData> = new Vector.<BitmapData>();
+			
+		
+			// Each bitmap contains an entire spritesheet
+			for (i = 0; i < _spriteBitmaps.length; i++)
+			{
+				bitmapsToExport.push(_spriteBitmaps[i].bitmapData);
+			}
+			
+			for (i = 0; i < bitmapsToExport.length; i++)
 			{
 				targetPath = pngPath;
 				//First fix path
@@ -360,12 +384,102 @@ package com.mcleodgaming.spritesatchel.core
 					prefix = targetPath + File.separator;
 				}
 				// Append # to the name if there's more than one sheet
-				targetPath = (_spriteBitmaps.length > 1) ? prefix + _name + i + ".png" : prefix + _name + ".png";
+				targetPath = (bitmapsToExport.length > 1) ? prefix + _name + i + ".png" : prefix + _name + ".png";
 				var directory:File = new File(prefix);
 				if (!directory.exists)
 					directory.createDirectory();
 				
-				var fullsheet:BitmapData = _spriteBitmaps[i].bitmapData;
+				var fullsheet:BitmapData = bitmapsToExport[i];
+				var imgByteArray:ByteArray = PNGEncoder.encode(fullsheet);
+				
+				var	fs:FileStream = new FileStream();
+				fs.open(new File(targetPath), FileMode.WRITE);
+				fs.addEventListener(Event.SELECT, function(e:Event):void {} ); 
+				fs.addEventListener(IOErrorEvent.IO_ERROR,  function(e:IOErrorEvent):void {
+					//EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed with IOError.")); 
+				}); 
+				fs.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e:SecurityErrorEvent):void {
+					//EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.EXPORT_COMPLETE, "Export job completed with SecurityError.")); 
+				}); 
+				fs.addEventListener(ProgressEvent.PROGRESS, function(e:Event):void {}); 
+				fs.addEventListener(Event.COMPLETE, function(e:Event):void { 
+				});
+				fs.writeBytes(imgByteArray);
+				fs.close();
+			}
+		}
+		public function saveSpriteSheetAsPNGSequence(pngPath:String):void
+		{
+			var i:int = 0;
+			var j:int = 0;
+			var targetPath:String;
+			var tmpBMPDat:BitmapData = null;
+			var previousBMPDat:BitmapData = null;
+			var currentIndex:int = 0;
+			var bitmapsToExport:Array = new Array();
+			
+			// Separate spritesheet sprites into individual PNGs instead organized by animation
+			
+			// For each animation
+			for (i = 0; i < _animations.length; i++)
+			{
+				currentIndex = 0;
+				// For each frame in the animation
+				for (j = 0; j < _animations[i].sprites.length; j++)
+				{
+					// Extract the sprite bitmap data
+					var currentSprite:SpriteObject = _animations[i].sprites[j];
+					tmpBMPDat = new BitmapData(currentSprite.rect.width, currentSprite.rect.height, true, SpriteSheet.TRANS_COLOR);
+					tmpBMPDat.copyPixels(_spriteBitmaps[currentSprite.sheetIndex].bitmapData, currentSprite.rect, new Point(), null, null, true)
+					
+					// Make sure we didn't already just use this same exact bitmap
+					if (!previousBMPDat || previousBMPDat.compare(tmpBMPDat) !== 0)
+					{
+						// Store the name of the animation and its bitmap data
+						bitmapsToExport.push({ name: _animations[i].id, bitmapData: tmpBMPDat, index: currentIndex });
+						previousBMPDat = tmpBMPDat;
+						currentIndex++;
+					}
+				}
+			}
+				
+			// For each bitmap to export
+			for (i = 0; i < bitmapsToExport.length; i++)
+			{
+				targetPath = pngPath;
+				//First fix path
+				var prefix:String = "";
+				if (targetPath.indexOf(".") == 0)
+				{
+					//Relative to absolute
+					if (!Main.Config.FilePath)
+					{
+						EventManager.dispatcher.dispatchEvent(new SpriteSatchelEvent(SpriteSatchelEvent.STATUS, "Warning, cannot export " + _name + ".png to relative File path before saving Project.")); 
+						return;
+					} else
+					{
+						prefix = Main.Config.FilePath.substr(0, Main.Config.FilePath.lastIndexOf(File.separator)) + File.separator + targetPath + File.separator;
+					}
+				} else
+				{
+					//Already absolute
+					prefix = targetPath + File.separator;
+				}
+				
+				// Append # to the name if there's more than one sprite
+				if (bitmapsToExport.length > 1)
+				{
+					targetPath = prefix + _name + "_" + bitmapsToExport[i].name +"_" + bitmapsToExport[i].index + ".png";
+				} else
+				{
+					targetPath = prefix + _name + "_" + bitmapsToExport[i].name + ".png";
+				}
+				
+				var directory:File = new File(prefix);
+				if (!directory.exists)
+					directory.createDirectory();
+				
+				var fullsheet:BitmapData = bitmapsToExport[i].bitmapData;
 				var imgByteArray:ByteArray = PNGEncoder.encode(fullsheet);
 				
 				var	fs:FileStream = new FileStream();
