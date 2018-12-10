@@ -53,7 +53,7 @@ package com.mcleodgaming.spritesatchel
 		private var m_fileMenu:NativeMenu;
 		
 		private var m_settingsMenu:NativeMenu;
-		private var m_exportModeMenu:NativeMenu;
+		private var m_exportModeMenu:NativeMenu;
 		private var m_dimensionsMenu:NativeMenu;
 		
 		private var m_helpMenu:NativeMenu;

@@ -442,13 +442,14 @@ package com.mcleodgaming.spritesatchel.core
 					}
 				}
 			}
-				
+			
 			// For each bitmap to export
 			for (i = 0; i < bitmapsToExport.length; i++)
 			{
 				targetPath = pngPath;
-				//First fix path
 				var prefix:String = "";
+				
+				// Determine proper path
 				if (targetPath.indexOf(".") == 0)
 				{
 					//Relative to absolute
@@ -466,10 +467,37 @@ package com.mcleodgaming.spritesatchel.core
 					prefix = targetPath + File.separator;
 				}
 				
+				// Next, we'll figure out the proper number of digits to generate for alphabetical consistency (i.e. 099.png, 100.png, etc.)
+				// Count total images for this animation id
+				var totalBitmaps:Number = -1;
+				for (j = 0; j < bitmapsToExport.length; j++)
+				{
+					if (bitmapsToExport[i].name === bitmapsToExport[j].name)
+					{
+						totalBitmaps++;
+					}
+				}
+				
+				// Figure out digit length
+				var digitLength:int = 1;
+				while (totalBitmaps >= 10)
+				{
+					totalBitmaps /= 10;
+					digitLength++;
+				}
+				
+				// Prepend correct amount of 0s
+				var numberStr:String = "" + bitmapsToExport[i].index;
+				while (numberStr.length < digitLength)
+				{
+					numberStr = "0" + numberStr;
+				}
+				
+				
 				// Append # to the name if there's more than one sprite
 				if (bitmapsToExport.length > 1)
 				{
-					targetPath = prefix + _name + "_" + bitmapsToExport[i].name +"_" + bitmapsToExport[i].index + ".png";
+					targetPath = prefix + _name + "_" + bitmapsToExport[i].name +"_" + numberStr + ".png";
 				} else
 				{
 					targetPath = prefix + _name + "_" + bitmapsToExport[i].name + ".png";
