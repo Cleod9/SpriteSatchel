@@ -4,6 +4,7 @@ package com.mcleodgaming.spritesatchel.core
 	import com.mcleodgaming.spritesatchel.controllers.MenuController;
 	import com.mcleodgaming.spritesatchel.core.collision.HitBoxAnimation;
 	import com.mcleodgaming.spritesatchel.core.collision.HitBoxSprite;
+	import com.mcleodgaming.spritesatchel.enums.ExportModeSetting;
 	import com.mcleodgaming.spritesatchel.events.EventManager;
 	import com.mcleodgaming.spritesatchel.events.SpriteSatchelEvent;
 	import com.mcleodgaming.spritesatchel.Main;
@@ -331,7 +332,7 @@ package com.mcleodgaming.spritesatchel.core
 		public function exportAll(pngPath:String, jsonPath:String):void 
 		{
 			saveSpriteSheet(pngPath);
-			if (Main.Config.ExportMode === "createjs")
+			if (Main.Config.ExportMode === ExportModeSetting.CREATEJS)
 			{
 				saveJSON(jsonPath);
 			}
@@ -340,9 +341,12 @@ package com.mcleodgaming.spritesatchel.core
 		}
 		public function saveSpriteSheet(pngPath:String):void
 		{
-			if (Main.Config.ExportMode === "png")
+			if (Main.Config.ExportMode === ExportModeSetting.PNG)
 			{
 				saveSpriteSheetAsPNGSequence(pngPath);
+			} else if (Main.Config.ExportMode === ExportModeSetting.PNG_TRIMMED)
+			{
+				saveSpriteSheetAsPNGSequence(pngPath, true);
 			} else
 			{
 				saveSpriteSheetForCreateJS(pngPath);
@@ -408,7 +412,7 @@ package com.mcleodgaming.spritesatchel.core
 				fs.close();
 			}
 		}
-		public function saveSpriteSheetAsPNGSequence(pngPath:String):void
+		public function saveSpriteSheetAsPNGSequence(pngPath:String, trimmed:Boolean = false):void
 		{
 			var i:int = 0;
 			var j:int = 0;
@@ -417,6 +421,8 @@ package com.mcleodgaming.spritesatchel.core
 			var previousBMPDat:BitmapData = null;
 			var currentIndex:int = 0;
 			var bitmapsToExport:Array = new Array();
+			var mins:Point = new Point();
+			var maxes:Point = new Point();
 			
 			// Separate spritesheet sprites into individual PNGs instead organized by animation
 			
@@ -436,9 +442,15 @@ package com.mcleodgaming.spritesatchel.core
 					if (!previousBMPDat || previousBMPDat.compare(tmpBMPDat) !== 0)
 					{
 						// Store the name of the animation and its bitmap data
-						bitmapsToExport.push({ name: _animations[i].id, bitmapData: tmpBMPDat, index: currentIndex });
+						bitmapsToExport.push({ name: _animations[i].id, bitmapData: tmpBMPDat, index: currentIndex, sprite: currentSprite });
 						previousBMPDat = tmpBMPDat;
 						currentIndex++;
+						
+						// Determine dimension extremes
+						mins.x = Math.min(mins.x, -currentSprite.registration.x);
+						mins.y = Math.min(mins.y, -currentSprite.registration.y);
+						maxes.x = Math.max(maxes.x, currentSprite.rect.width + -currentSprite.registration.x);
+						maxes.y = Math.max(maxes.y, currentSprite.rect.height + -currentSprite.registration.y);
 					}
 				}
 			}
@@ -507,8 +519,34 @@ package com.mcleodgaming.spritesatchel.core
 				if (!directory.exists)
 					directory.createDirectory();
 				
-				var fullsheet:BitmapData = bitmapsToExport[i].bitmapData;
-				var imgByteArray:ByteArray = PNGEncoder.encode(fullsheet);
+				var frameBitmap:BitmapData = null; 
+				
+				if (!trimmed)
+				{
+					// Resize the bitmap to fit the entire animation inside with proper offsets applied
+					frameBitmap = new BitmapData(maxes.x - mins.x, maxes.y - mins.y, true, SpriteSheet.TRANS_COLOR);
+					frameBitmap.copyPixels(
+						bitmapsToExport[i].bitmapData,
+						new Rectangle(
+							0,
+							0,
+							bitmapsToExport[i].bitmapData.width,
+							bitmapsToExport[i].bitmapData.height
+						),
+						new Point(
+							bitmapsToExport[i].sprite.registration.x + (maxes.x - mins.x) / 2, 
+							bitmapsToExport[i].sprite.registration.y + (maxes.y - mins.y) / 2
+						),
+						null,
+						null,
+						true
+					);
+				} else
+				{
+					// Simply export the already trimmed bitmap
+					frameBitmap = bitmapsToExport[i].bitmapData;
+				}
+				var imgByteArray:ByteArray = PNGEncoder.encode(frameBitmap);
 				
 				var	fs:FileStream = new FileStream();
 				fs.open(new File(targetPath), FileMode.WRITE);

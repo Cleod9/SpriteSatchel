@@ -2,12 +2,13 @@ package com.mcleodgaming.spritesatchel.core
 {
 	import com.adobe.utils.StringUtil;
 	import com.mcleodgaming.spritesatchel.Main;
+	import com.mcleodgaming.spritesatchel.enums.ExportModeSetting;
 	import com.mcleodgaming.spritesatchel.util.Utils;
 	import flash.display.MovieClip;
 	import flash.filesystem.File;
 	public class SatchelConfig 
 	{
-		public static const VERSION:String = "0.7.1";
+		public static const VERSION:String = "0.8.0";
 		
 		private var _date:Date;
 		private var _filePath:String;
@@ -26,7 +27,7 @@ package com.mcleodgaming.spritesatchel.core
 			_filePath = null;
 			_projectName = "Untitled";
 			_timestamp = new Date();
-			_exportMode = "createjs";
+			_exportMode = ExportModeSetting.CREATEJS;
 			_jsonExportPath = File.desktopDirectory.nativePath + File.separator + ["assets", "json"].join(File.separator);
 			_pngExportPath = File.desktopDirectory.nativePath + File.separator + ["assets", "images"].join(File.separator);
 			_maxWidth = 2048;
@@ -64,7 +65,7 @@ package com.mcleodgaming.spritesatchel.core
 		}
 		public function set ExportMode(value:String):void
 		{
-			if (_exportMode !== "createjs" && _exportMode !== "png")
+			if ([ExportModeSetting.CREATEJS, ExportModeSetting.PNG, ExportModeSetting.PNG_TRIMMED].indexOf(_exportMode) < 0)
 			{
 				Main.showAlert("Error, invalid export mode: " + value);
 			} else
@@ -115,7 +116,7 @@ package com.mcleodgaming.spritesatchel.core
 			_projectName = "";
 			_timestamp = null;
 			_timestamp = new Date();
-			_exportMode = "createjs";
+			_exportMode = ExportModeSetting.CREATEJS;
 			_jsonExportPath = "";
 			_pngExportPath = "";
 			_maxWidth = 2048;

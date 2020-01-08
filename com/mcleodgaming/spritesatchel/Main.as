@@ -3,6 +3,7 @@ package com.mcleodgaming.spritesatchel
 	import adobe.utils.CustomActions;
 	import com.mcleodgaming.spritesatchel.controllers.*;
 	import com.mcleodgaming.spritesatchel.core.SatchelConfig;
+	import com.mcleodgaming.spritesatchel.enums.ExportModeSetting;
 	import com.mcleodgaming.spritesatchel.events.EventManager;
 	import com.mcleodgaming.spritesatchel.events.SpriteSatchelEvent;
 	import flash.desktop.NativeApplication;
@@ -78,6 +79,7 @@ package com.mcleodgaming.spritesatchel
 		
 		private var m_createJSMode:NativeMenuItem;
 		private var m_pngSequenceMode:NativeMenuItem;
+		private var m_pngSequenceModeTrimmed:NativeMenuItem;
 		
 		// Help
 		private var m_about:NativeMenuItem;
@@ -125,6 +127,7 @@ package com.mcleodgaming.spritesatchel
 			
 			m_createJSMode = new NativeMenuItem("CreateJS");
 			m_pngSequenceMode = new NativeMenuItem("PNG Sequence");
+			m_pngSequenceModeTrimmed = new NativeMenuItem("PNG Sequence (Trimmed)");
 			
 			// Create Help Menu Items
 			m_about = new NativeMenuItem("About");
@@ -163,6 +166,7 @@ package com.mcleodgaming.spritesatchel
 			
 			m_exportModeMenu.addItem(m_createJSMode);
 			m_exportModeMenu.addItem(m_pngSequenceMode);
+			m_exportModeMenu.addItem(m_pngSequenceModeTrimmed);
 			
 			m_helpMenu.addItem(m_about);
 			
@@ -203,6 +207,7 @@ package com.mcleodgaming.spritesatchel
 			
 			m_createJSMode.addEventListener(Event.SELECT, createjs_mode_CLICK);
 			m_pngSequenceMode.addEventListener(Event.SELECT, png_mode_CLICK);
+			m_pngSequenceModeTrimmed.addEventListener(Event.SELECT, png_mode_trimmed_CLICK);
 			
 			m_about.addEventListener(Event.SELECT, about_CLICK);
 			
@@ -311,12 +316,15 @@ package com.mcleodgaming.spritesatchel
 				{
 					height_8192_CLICK(null);
 				}
-				if (_config.ExportMode === "createjs")
+				if (_config.ExportMode === ExportModeSetting.CREATEJS)
 				{
 					createjs_mode_CLICK(null);
-				} else
+				} else if (_config.ExportMode === ExportModeSetting.PNG)
 				{
 					png_mode_CLICK(null);
+				} else if (_config.ExportMode === ExportModeSetting.PNG_TRIMMED)
+				{
+					png_mode_trimmed_CLICK(null);
 				}
 				Main.setTitle(Main.TITLE + " - " + Main.Config.ProjectName);
 			});
@@ -463,15 +471,24 @@ package com.mcleodgaming.spritesatchel
 		}
 		private function createjs_mode_CLICK(e:Event):void
 		{
-			_config.ExportMode = "createjs";
-			m_createJSMode.checked = _config.ExportMode === "createjs";
-			m_pngSequenceMode.checked = _config.ExportMode === "png";
+			_config.ExportMode = ExportModeSetting.CREATEJS;
+			m_createJSMode.checked = true;
+			m_pngSequenceMode.checked = false;
+			m_pngSequenceModeTrimmed.checked = false;
 		}
 		private function png_mode_CLICK(e:Event):void
 		{
-			_config.ExportMode = "png";
-			m_createJSMode.checked = _config.ExportMode === "createjs";
-			m_pngSequenceMode.checked = _config.ExportMode === "png";
+			_config.ExportMode = ExportModeSetting.PNG;
+			m_createJSMode.checked = false;
+			m_pngSequenceMode.checked = true;
+			m_pngSequenceModeTrimmed.checked = false;
+		}
+		private function png_mode_trimmed_CLICK(e:Event):void
+		{
+			_config.ExportMode = ExportModeSetting.PNG_TRIMMED;
+			m_createJSMode.checked = false;
+			m_pngSequenceMode.checked = false;
+			m_pngSequenceModeTrimmed.checked = true;
 		}
 	}
 	

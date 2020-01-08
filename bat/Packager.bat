@@ -3,14 +3,14 @@ if not exist %CERT_FILE% goto certificate
 
 :: AIR output
 if not exist %AIR_PATH% md %AIR_PATH%
-set OUTPUT=%AIR_PATH%\%AIR_NAME%%AIR_TARGET%
+set OUTPUT=%AIR_PATH%\%FILE_NAME%
 
 :: Package
 echo.
-echo Packaging %AIR_NAME%%AIR_TARGET%.air using certificate %CERT_FILE%...
-call adt -package %CERT_TSA% %OPTIONS% %SIGNING_OPTIONS% %OUTPUT% %APP_XML% %FILE_OR_DIR%
-echo "Applying certificate migration %CERT_FILE_MIGRATE%"
-call adt -migrate -storetype pkcs12 -storepass %CERT_PASS% -keystore %CERT_FILE_MIGRATE% %OUTPUT%.air %OUTPUT%.air
+echo Packaging %FILE_NAME% using certificate %CERT_FILE%...
+call adt -package %CERT_TSA% %OPTIONS% %SIGNING_OPTIONS% %AIR_TARGET% %OUTPUT% %APP_XML% %FILE_OR_DIR%
+:: if defined IS_AIR echo "Applying certificate migration %CERT_FILE_MIGRATE%"
+:: if defined IS_AIR call adt -migrate -storetype pkcs12 -storepass %CERT_PASS% -keystore %CERT_FILE_MIGRATE% %OUTPUT%.air %OUTPUT%.air
 if errorlevel 1 goto failed
 goto end
 
