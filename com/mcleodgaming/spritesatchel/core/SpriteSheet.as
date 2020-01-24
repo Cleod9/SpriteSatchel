@@ -421,15 +421,20 @@ package com.mcleodgaming.spritesatchel.core
 			var previousBMPDat:BitmapData = null;
 			var currentIndex:int = 0;
 			var bitmapsToExport:Array = new Array();
-			var mins:Point = new Point();
-			var maxes:Point = new Point();
+			var extremetiesList:Array = new Array();
 			
 			// Separate spritesheet sprites into individual PNGs instead organized by animation
 			
 			// For each animation
 			for (i = 0; i < _animations.length; i++)
 			{
+				if (_animations[i].sprites.length <= 0) {
+					continue;
+				}
 				currentIndex = 0;
+				var extremetiesObj:Object = { mins: new Point(Number.MAX_VALUE, Number.MAX_VALUE), maxes: new Point(Number.MIN_VALUE, Number.MIN_VALUE) };
+				extremetiesList.push(extremetiesObj);
+				
 				// For each frame in the animation
 				for (j = 0; j < _animations[i].sprites.length; j++)
 				{
@@ -442,15 +447,15 @@ package com.mcleodgaming.spritesatchel.core
 					if (!previousBMPDat || previousBMPDat.compare(tmpBMPDat) !== 0)
 					{
 						// Store the name of the animation and its bitmap data
-						bitmapsToExport.push({ name: _animations[i].id, bitmapData: tmpBMPDat, index: currentIndex, sprite: currentSprite });
+						bitmapsToExport.push({ name: _animations[i].id, bitmapData: tmpBMPDat, index: currentIndex, sprite: currentSprite, extremeties: extremetiesObj });
 						previousBMPDat = tmpBMPDat;
 						currentIndex++;
 						
 						// Determine dimension extremes
-						mins.x = Math.min(mins.x, -currentSprite.registration.x);
-						mins.y = Math.min(mins.y, -currentSprite.registration.y);
-						maxes.x = Math.max(maxes.x, currentSprite.rect.width + -currentSprite.registration.x);
-						maxes.y = Math.max(maxes.y, currentSprite.rect.height + -currentSprite.registration.y);
+						extremetiesObj.mins.x = Math.min(extremetiesObj.mins.x, currentSprite.registration.x);
+						extremetiesObj.mins.y = Math.min(extremetiesObj.mins.y, currentSprite.registration.y);
+						extremetiesObj.maxes.x = Math.max(extremetiesObj.maxes.x, currentSprite.registration.x + currentSprite.rect.width);
+						extremetiesObj.maxes.y = Math.max(extremetiesObj.maxes.y, currentSprite.registration.y + currentSprite.rect.height);
 					}
 				}
 			}
@@ -524,7 +529,7 @@ package com.mcleodgaming.spritesatchel.core
 				if (!trimmed)
 				{
 					// Resize the bitmap to fit the entire animation inside with proper offsets applied
-					frameBitmap = new BitmapData(maxes.x - mins.x, maxes.y - mins.y, true, SpriteSheet.TRANS_COLOR);
+					frameBitmap = new BitmapData(bitmapsToExport[i].extremeties.maxes.x - bitmapsToExport[i].extremeties.mins.x, bitmapsToExport[i].extremeties.maxes.y - bitmapsToExport[i].extremeties.mins.y, true, SpriteSheet.TRANS_COLOR);
 					frameBitmap.copyPixels(
 						bitmapsToExport[i].bitmapData,
 						new Rectangle(
@@ -534,8 +539,8 @@ package com.mcleodgaming.spritesatchel.core
 							bitmapsToExport[i].bitmapData.height
 						),
 						new Point(
-							bitmapsToExport[i].sprite.registration.x + (maxes.x - mins.x) / 2, 
-							bitmapsToExport[i].sprite.registration.y + (maxes.y - mins.y) / 2
+							bitmapsToExport[i].sprite.registration.x - bitmapsToExport[i].extremeties.mins.x, 
+							bitmapsToExport[i].sprite.registration.y - bitmapsToExport[i].extremeties.mins.y
 						),
 						null,
 						null,
