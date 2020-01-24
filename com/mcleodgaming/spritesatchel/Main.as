@@ -81,6 +81,8 @@ package com.mcleodgaming.spritesatchel
 		private var m_pngSequenceMode:NativeMenuItem;
 		private var m_pngSequenceModeTrimmed:NativeMenuItem;
 		
+		private var m_smoothScaling:NativeMenuItem;
+		
 		// Help
 		private var m_about:NativeMenuItem;
 		
@@ -129,6 +131,8 @@ package com.mcleodgaming.spritesatchel
 			m_pngSequenceMode = new NativeMenuItem("PNG Sequence");
 			m_pngSequenceModeTrimmed = new NativeMenuItem("PNG Sequence (Trimmed)");
 			
+			m_smoothScaling = new NativeMenuItem("Smooth Scaling");
+			
 			// Create Help Menu Items
 			m_about = new NativeMenuItem("About");
 			
@@ -154,6 +158,7 @@ package com.mcleodgaming.spritesatchel
 			
 			m_settingsMenu.addSubmenu(m_dimensionsMenu, "Max Dimensons");
 			m_settingsMenu.addSubmenu(m_exportModeMenu, "Export Format");
+			m_settingsMenu.addItem(m_smoothScaling);
 			
 			m_dimensionsMenu.addItem(m_maxWidth2048);
 			m_dimensionsMenu.addItem(m_maxWidth4096);
@@ -209,6 +214,8 @@ package com.mcleodgaming.spritesatchel
 			m_pngSequenceMode.addEventListener(Event.SELECT, png_mode_CLICK);
 			m_pngSequenceModeTrimmed.addEventListener(Event.SELECT, png_mode_trimmed_CLICK);
 			
+			m_smoothScaling.addEventListener(Event.SELECT, smoothScaling_CLICK);
+			
 			m_about.addEventListener(Event.SELECT, about_CLICK);
 			
 			//Fix title
@@ -217,12 +224,7 @@ package com.mcleodgaming.spritesatchel
 			MenuController.showMainMenu();
 			EventManager.dispatcher.addEventListener(SpriteSatchelEvent.FILE_CHANGED, handleFileChanged);
 			
-			// Default dimensions
-			width_2048_CLICK(null);
-			height_2048_CLICK(null);
-			
-			// Default export mode
-			createjs_mode_CLICK(null);
+			refreshMenuUI();
 		}
 		public static function showAlert(msg:String):void
 		{
@@ -270,6 +272,45 @@ package com.mcleodgaming.spritesatchel
 		}
 		
 		/**
+		 * Refreshes menu UI after a sweeping config change
+		 */
+		private function refreshMenuUI():void
+		{
+			if (_config.MaxWidth === 2048)
+			{
+				width_2048_CLICK(null);
+			} else if (_config.MaxWidth === 4096)
+			{
+				width_4096_CLICK(null);
+			} else if (_config.MaxWidth === 8192)
+			{
+				width_8192_CLICK(null);
+			}
+			if (_config.MaxHeight === 2048)
+			{
+				height_2048_CLICK(null);
+			} else if (_config.MaxHeight === 4096)
+			{
+				height_4096_CLICK(null);
+			} else if (_config.MaxHeight === 8192)
+			{
+				height_8192_CLICK(null);
+			}
+			if (_config.ExportMode === ExportModeSetting.CREATEJS)
+			{
+				createjs_mode_CLICK(null);
+			} else if (_config.ExportMode === ExportModeSetting.PNG)
+			{
+				png_mode_CLICK(null);
+			} else if (_config.ExportMode === ExportModeSetting.PNG_TRIMMED)
+			{
+				png_mode_trimmed_CLICK(null);
+			}
+			
+			m_smoothScaling.checked = _config.SmoothScaling;
+		}
+		
+		/**
 		 * Starts new Project
 		 * @param	e Event argument.
 		 */
@@ -277,6 +318,7 @@ package com.mcleodgaming.spritesatchel
 		{
 			Main.Config.reset();
 			MenuController.mainMenu.resetAll();
+			refreshMenuUI();
 		}
 		
 		/**
@@ -296,36 +338,9 @@ package com.mcleodgaming.spritesatchel
 				var input:String = fs.readUTFBytes(fs.bytesAvailable);
 				fs.close();
 				MenuController.mainMenu.loadProjectJSON(input);
-				if (_config.MaxWidth === 2048)
-				{
-					width_2048_CLICK(null);
-				} else if (_config.MaxWidth === 4096)
-				{
-					width_4096_CLICK(null);
-				} else if (_config.MaxWidth === 8192)
-				{
-					width_8192_CLICK(null);
-				}
-				if (_config.MaxHeight === 2048)
-				{
-					height_2048_CLICK(null);
-				} else if (_config.MaxHeight === 4096)
-				{
-					height_4096_CLICK(null);
-				} else if (_config.MaxHeight === 8192)
-				{
-					height_8192_CLICK(null);
-				}
-				if (_config.ExportMode === ExportModeSetting.CREATEJS)
-				{
-					createjs_mode_CLICK(null);
-				} else if (_config.ExportMode === ExportModeSetting.PNG)
-				{
-					png_mode_CLICK(null);
-				} else if (_config.ExportMode === ExportModeSetting.PNG_TRIMMED)
-				{
-					png_mode_trimmed_CLICK(null);
-				}
+				
+				refreshMenuUI();
+				
 				Main.setTitle(Main.TITLE + " - " + Main.Config.ProjectName);
 			});
 			openDialog.addEventListener(Event.CANCEL, function():void { MenuController.mainMenu.println("Action cancelled"); } );
@@ -489,6 +504,11 @@ package com.mcleodgaming.spritesatchel
 			m_createJSMode.checked = false;
 			m_pngSequenceMode.checked = false;
 			m_pngSequenceModeTrimmed.checked = true;
+		}
+		private function smoothScaling_CLICK(e:Event):void
+		{
+			_config.SmoothScaling = !_config.SmoothScaling;
+			m_smoothScaling.checked = _config.SmoothScaling;
 		}
 	}
 	

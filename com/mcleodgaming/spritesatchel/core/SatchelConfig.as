@@ -8,7 +8,7 @@ package com.mcleodgaming.spritesatchel.core
 	import flash.filesystem.File;
 	public class SatchelConfig 
 	{
-		public static const VERSION:String = "0.8.1";
+		public static const VERSION:String = "0.8.2";
 		
 		private var _date:Date;
 		private var _filePath:String;
@@ -19,6 +19,7 @@ package com.mcleodgaming.spritesatchel.core
 		private var _pngExportPath:String;
 		private var _maxWidth:int;
 		private var _maxHeight:int;
+		private var _smoothScaling:Boolean;
 		private var _sources:Vector.<SatchelSource>
 		
 		public function SatchelConfig():void
@@ -32,6 +33,7 @@ package com.mcleodgaming.spritesatchel.core
 			_pngExportPath = File.desktopDirectory.nativePath + File.separator + ["assets", "images"].join(File.separator);
 			_maxWidth = 2048;
 			_maxHeight = 2048;
+			_smoothScaling = true;
 			_sources = new Vector.<SatchelSource>();
 		}
 		
@@ -105,6 +107,14 @@ package com.mcleodgaming.spritesatchel.core
 		{
 			_maxHeight = value;
 		}
+		public function get SmoothScaling():Boolean
+		{
+			return _smoothScaling;
+		}
+		public function set SmoothScaling(value:Boolean):void
+		{
+			_smoothScaling = value;
+		}
 		public function get Sources():Vector.<SatchelSource>
 		{
 			return _sources;
@@ -121,6 +131,7 @@ package com.mcleodgaming.spritesatchel.core
 			_pngExportPath = "";
 			_maxWidth = 2048;
 			_maxHeight = 2048;
+			_smoothScaling = true;
 			_sources = null;
 			_sources = new Vector.<SatchelSource>();
 		}
@@ -140,6 +151,7 @@ package com.mcleodgaming.spritesatchel.core
 			spritesatchel.config.pngExportPath = _pngExportPath;
 			spritesatchel.config.maxWidth = _maxWidth;
 			spritesatchel.config.maxHeight = _maxHeight;
+			spritesatchel.config.smoothScaling = _smoothScaling;
 			
 			spritesatchel.sources = [];
 			

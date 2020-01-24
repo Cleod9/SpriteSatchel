@@ -247,6 +247,8 @@ package com.mcleodgaming.spritesatchel.menu
 						Main.Config.MaxWidth = data.config.maxWidth;
 					if (data.config.maxHeight)
 						Main.Config.MaxHeight = data.config.maxHeight;
+					if (data.config.smoothScaling !== undefined)
+						Main.Config.SmoothScaling = data.config.smoothScaling;
 				}
 				if (data.sources)
 				{

@@ -52,6 +52,10 @@
 			var bounds : Rectangle = data.getColorBoundsRect(0xFFFFFFFF, SpriteSheet.TRANS_COLOR, false);
 			data.dispose();
 			
+			// Minor failsafe if bounds were unable to be detected
+			if (bounds.width == 0 || bounds.height == 0)
+				return rect;
+				
 			bounds.x += rect.x;
 			bounds.y += rect.y;
 			

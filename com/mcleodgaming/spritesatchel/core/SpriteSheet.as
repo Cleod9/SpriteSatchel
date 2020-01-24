@@ -98,7 +98,7 @@ package com.mcleodgaming.spritesatchel.core
 			}
 			return null;
 		}
-		public function importAnimation(name:String, mc:MovieClip, forceXScale:Number = 1, forceYScale:Number = 1, startingFrame:int = 1, targetSpriteBitmap:SpriteBitmap = null):void
+		public function importAnimation(name:String, mc:MovieClip, startingFrame:int = 1, targetSpriteBitmap:SpriteBitmap = null):void
 		{
 			var animation:Animation = findAnimationByID(name);
 			if (!animation)
@@ -111,22 +111,26 @@ package com.mcleodgaming.spritesatchel.core
 			
 			
 			var frameNum:int = startingFrame;
-			var scaleX:Number = 1;
-			var scaleY:Number = 1;
-			var origScaleX:Number = 1;
-			var origScaleY:Number = 1;
+			var origX:Number = mc.x;
+			var origY:Number = mc.y;
+			
+			// Note: The graphics are captured in scaleX/scaleY of 1, and we resize to origScaleX/origScaleY
+			var origScaleX:Number = mc.scaleX;
+			var origScaleY:Number = mc.scaleY;
+			
 			var prevSprite:SpriteObject = null;
 			var tmpMC:MovieClip;
 			var k:int;
 			var targetSheet:SpriteBitmap = targetSpriteBitmap || _spriteBitmaps[0];
 			var targetSheetIndex:int = _spriteBitmaps.indexOf(targetSheet);
 			
-			//This will track the scale of the MC
-			//The graphics are captured in origScaleX/origScaleY size and we treat this as scaleX/scaleY of 1
-			origScaleX = (forceXScale == 1) ? mc.scaleX : forceXScale;
-			origScaleY = (forceYScale == 1) ? mc.scaleY : forceYScale;
-			scaleX = origScaleX;
-			scaleY = origScaleY;
+			// Resize to scale 1 to prevent filter clipping issues
+			mc.scaleX = 1;
+			mc.scaleY = 1;
+			
+			// Forcefully put back in the correct position after the potential scaling change
+			mc.x = origX;
+			mc.y = origY;
 			
 			//For each frame in the movie clip we are importing
 			mc.gotoAndStop(frameNum);
@@ -158,9 +162,8 @@ package com.mcleodgaming.spritesatchel.core
 						}
 					}
 					//Ready to capture Bitmap of this frame
-					//TODO: Fix bug where in optimize-mode we can't have MC scaling, falls back to getBounds()
-					var optimize:Boolean = true;
-					var boundsRect:Rectangle = (optimize && (scaleX == 1 && scaleY == 1)) ?  Utils.getVisibleBounds(mc, mc) : mc.getBounds(mc);
+					var boundsRect:Rectangle = Utils.getVisibleBounds(mc, mc);
+					
 					var registrationPoint:Point = new Point();
 			
 					//Padding (Always add additional 2 pixels due to getBounds() clipping issue)
@@ -173,8 +176,8 @@ package com.mcleodgaming.spritesatchel.core
 					boundsRect.y = Math.floor(boundsRect.y);
 					
 					//Registration point relative to parent clip
-					registrationPoint.x = Math.round((boundsRect.x * scaleX) + mc.x);
-					registrationPoint.y = Math.round((boundsRect.y * scaleY) + mc.y);
+					registrationPoint.x = Math.round((boundsRect.x * origScaleX) + mc.x);
+					registrationPoint.y = Math.round((boundsRect.y * origScaleY) + mc.y);
 					
 					if (boundsRect.width == 0)
 					{
@@ -194,7 +197,7 @@ package com.mcleodgaming.spritesatchel.core
 					}
 					
 					//Create the blank bitmap for the frame and get transform info
-					var currentFrameBitmap:BitmapData = new BitmapData(Math.ceil(boundsRect.width * scaleX), Math.ceil(boundsRect.height * scaleY), true, SpriteSheet.TRANS_COLOR);
+					var currentFrameBitmap:BitmapData = new BitmapData(Math.ceil(boundsRect.width * origScaleX), Math.ceil(boundsRect.height * origScaleY), true, SpriteSheet.TRANS_COLOR);
 					
 					//Get offset information (prevOffset refers to the position of the top left of the graphic within the MC bounds)
 					var prevOffset:Point = new Point();
@@ -203,7 +206,7 @@ package com.mcleodgaming.spritesatchel.core
 					var offset:Matrix = new Matrix();
 					offset.tx = -prevOffset.x;
 					offset.ty = -prevOffset.y;
-					offset.scale(scaleX, scaleY);
+					offset.scale(origScaleX, origScaleY);
 					if (mc.transform.matrix.a < 0 || mc.transform.matrix.d < 0)
 					{
 						//This MC is flipped horizontally or vertically so we need to deal with it
@@ -217,8 +220,8 @@ package com.mcleodgaming.spritesatchel.core
 					//On the off chance we have a sprite that has the EXACT same pixels as this one, we want to save memory by referring back to that sprite instead
 					//Basically what we're doing here is making the "location" of the current sprite on the sprite sheet the same as a pre-existing one
 					var skipSheet:Boolean = false;
-					var upcomingBMPDat:BitmapData = new BitmapData(Math.ceil(boundsRect.width * scaleX), Math.ceil(boundsRect.height * scaleY), true, SpriteSheet.TRANS_COLOR);
-					upcomingBMPDat.draw(mc, offset, mc.transform.colorTransform, null, null, true);
+					var upcomingBMPDat:BitmapData = new BitmapData(Math.ceil(boundsRect.width * origScaleX), Math.ceil(boundsRect.height * origScaleY), true, SpriteSheet.TRANS_COLOR);
+					upcomingBMPDat.draw(mc, offset, mc.transform.colorTransform, null, null, Main.Config.SmoothScaling);
 					
 					// For each frame
 					for (k = 0; k < _frames && !skipSheet; k++)
@@ -304,19 +307,32 @@ package com.mcleodgaming.spritesatchel.core
 							// Need to make a new bitmap first before doing
 							_spriteBitmaps.push(new SpriteBitmap());
 						}
-						importAnimation(name, mc, forceXScale, forceYScale, frameNum, _spriteBitmaps[_spriteBitmaps.length - 1]);
+						
+						// Reset position/scale before attempting to import again
+						mc.scaleX = origScaleX;
+						mc.scaleY = origScaleY;
+						mc.x = origX;
+						mc.y = origY;
+						
+						importAnimation(name, mc, frameNum, _spriteBitmaps[_spriteBitmaps.length - 1]);
 						return;
 					}
 					
 					//Now we can draw the new bitmap onto our spritesheet after we get the snapshot from the MC
-					currentFrameBitmap.draw(mc, offset, mc.transform.colorTransform, null, null, true);
-					targetSheet.bitmapData.copyPixels(currentFrameBitmap, currentFrameBitmap.rect, targetSheet.currentPoint, null, null, true);
+					currentFrameBitmap.draw(mc, offset, mc.transform.colorTransform, null, null, Main.Config.SmoothScaling);
+					targetSheet.bitmapData.copyPixels(currentFrameBitmap, currentFrameBitmap.rect, targetSheet.currentPoint, null, null, Main.Config.SmoothScaling);
 					
 					// Can safely increment frames
 					_frames++;
 					animation.sprites.push(prevSprite);
 				}
 			}
+						
+			// Reset position/scale
+			mc.scaleX = origScaleX;
+			mc.scaleY = origScaleY;
+			mc.x = origX;
+			mc.y = origY;
 		}
 		public function findByFrameIndex(frameIndex:int):SpriteObject
 		{
